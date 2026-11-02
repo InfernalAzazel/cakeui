@@ -329,6 +329,13 @@ def cmd_build(args: argparse.Namespace) -> int:
         console.warn("--dry-run：未执行任何命令。")
         return 0
 
+    # 前端 import 的是生成出来的 cakeui.js。刚 clone 下来的项目里它还不存在
+    # （生成文件不进版本控制），而 build 的第 1 步就要用它，所以先补齐桥接。
+    if plan.web_argv:
+        written = refresh_bridge_module(config)
+        if written:
+            console.detail(f"bridge    {_display_path(written[0].parent)}")
+
     result = run_build(plan)
     console.success(f"已生成 {result.executable}")
     console.detail(f"运行 {_display_path(result.executable)}")
