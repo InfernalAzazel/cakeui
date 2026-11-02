@@ -1,7 +1,13 @@
-# cakeui-cli
+<p align="center">
+  <img src="https://raw.githubusercontent.com/InfernalAzazel/cakeui/main/docs/icon.png" width="120" alt="CakeUI">
+</p>
 
-The `cakeui` command: scaffold a desktop app, run it against a live dev server,
-and package it with [Nuitka](https://nuitka.net/).
+<h1 align="center">cakeui-cli</h1>
+
+<p align="center">
+  The <code>cakeui</code> command: scaffold a desktop app, run it against a live
+  dev server, and package it with <a href="https://nuitka.net/">Nuitka</a>.
+</p>
 
 It depends on the [`cakeui`](https://pypi.org/project/cakeui/) runtime, so
 installing this gives you both.
@@ -54,12 +60,18 @@ name = "MyApp"
 entry = "main.py"
 web = "web"
 web_dist = "web/dist"
+icon = "assets/icon"
 
 [tool.cakeui.build]
 mode = "standalone"      # or "onefile"
 console = false
 output_dir = "dist"
 ```
+
+`icon` names a group of files rather than one path: `cakeui new` writes
+`assets/icon.icns`, `assets/icon.ico` and `assets/icon.png`, and each platform
+uses whichever it needs. Replacing the artwork means overwriting the files, not
+editing the config.
 
 ## Documentation
 

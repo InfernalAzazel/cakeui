@@ -1,10 +1,28 @@
-# CakeUI
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="CakeUI">
+</p>
 
-**Desktop apps with Python and a web frontend, no Rust or bundler required.**
+<h1 align="center">CakeUI</h1>
 
-CakeUI is a desktop application framework. Despite the `ui` in the name, it is not
-a component library: it is the bridge, the runtime, and the build tooling that
-turns a Python process and an HTML page into a real application window.
+<p align="center">
+  Desktop applications written in Python, with the frontend you already know.<br>
+  No Rust toolchain. No bundler required. One command to ship an app.
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="#python-api">Python API</a> ·
+  <a href="#javascript-api">JavaScript API</a> ·
+  <a href="#building-an-app">Building</a>
+</p>
+
+---
+
+CakeUI turns a Python process and an HTML page into a real desktop application
+window. Despite the `ui` in the name it is not a component library: it is the
+RPC bridge, the runtime, and the packaging toolchain that hold the two halves
+together.
 
 ```python
 from cakeui import App
@@ -14,196 +32,143 @@ app = App(title="Notes")
 @app.command
 def save_note(text: str) -> dict[str, str]:
     return {"saved": text}
+
+app.run()
 ```
 
 ```js
-const { saved } = await cakeui.invoke("save_note", { text: "buy cake" });
+const { saved } = await invoke("save_note", { text: "buy cake" });
 ```
 
-Commands are validated with Pydantic before your code runs. Type errors come back
-to JavaScript as structured data, not as a string that ends up in a `console.log`.
+Arguments and return values are checked with Pydantic before your code runs.
+Mistakes come back to JavaScript as structured data with a `code` and a list of
+offending fields, not as a string you have to parse out of a `console.log`.
 
-## Why another one
+## Why CakeUI
 
 | | CakeUI | Tauri | PyTauri | raw pywebview | Electron |
 |---|---|---|---|---|---|
 | Backend language | Python | Rust (+ Python via PyTauri) | Python | Python | Node |
 | Rust toolchain | not needed | required | required | n/a | n/a |
-| Command/event layer | built in | built in | built in | hand-rolled | hand-rolled |
+| Command and event layer | built in | built in | built in | hand-rolled | hand-rolled |
 | Argument validation | Pydantic | serde | Pydantic | none | none |
 | Frontend build step | optional | required | required | n/a | required |
 | Install size | small (system webview) | small | small | small | ~150 MB |
 
-The niche is narrow and deliberate: **the toolchain is pure Python** (plus an
-optional `npm i cakeui` for bundler users), and packaging is meant to be one
-command on top of [Nuitka](https://nuitka.net/).
+The niche is narrow on purpose. The toolchain is pure Python, the frontend is
+whatever Vite generates, and packaging is one command on top of
+[Nuitka](https://nuitka.net/).
 
-## Status
+## What you get
 
-v0.1 is usable for real apps on top of a local frontend. What exists today:
-
-- ✅ Python runtime: `App`, `@app.command`, `@app.on`, `app.emit`, `window` injection, `resource_path`
-- ✅ Pydantic validation for arguments and return values, with structured errors
-- ✅ `cakeui` frontend package: `invoke` / `listen` / `emit`, TypeScript types, `pywebviewready` handling
-- ✅ `cakeui new` scaffolds with `npm create vite` itself (Vue, React, Svelte, vanilla), `cakeui dev`, `cakeui info`
-- ✅ `cakeui dev` supervises the frontend dev server (Vite) and hands its URL to the window
-- ✅ `[tool.cakeui]` configuration parsing with path-escape protection
-- ✅ `cakeui build`: builds the frontend, then packages with Nuitka (`standalone` / `onefile`, `.app` on macOS)
-
-Not built yet, so do not expect these:
-
-- ⬜ `cakeui typegen` (Pydantic → TypeScript)
-- ⬜ installers, auto-update, command permissions
-- ⬜ code signing / notarization for the built app
+- **A bridge, not a rewrite.** `invoke` from JavaScript, `@app.command` in
+  Python. Calling across languages is one function, awaited like any other.
+- **Typed end to end.** Annotations are the contract. Pydantic validates
+  arguments and return values; errors arrive as `{ code, message, details }`.
+- **Events in both directions.** `app.emit` / `window.emit` into `listen`, and
+  `emit` into `@app.on`. Startup events fire before the window is ready and are
+  buffered rather than lost.
+- **Scaffolding that stays clean.** `cakeui new` runs `npm create vite` itself,
+  then adds two things: a generated bridge in `src/lib/cakeui/` and one import
+  line. Delete that line and you have an ordinary web app.
+- **A dev server you do not manage.** `cakeui dev` starts Vite, reads the URL it
+  actually bound, opens the window on it, and shuts it down when the window
+  closes.
+- **One-command packaging.** `cakeui build` builds the frontend, then compiles
+  the whole thing with Nuitka into a `.app` bundle, a folder, or a single
+  executable.
+- **Icons that just work.** Ship one picture; each platform picks the format it
+  needs, before and after packaging.
 
 ## Install
 
 ```bash
-pip install cakeui-cli      # brings in the `cakeui` runtime and the `cakeui` command
+pip install cakeui-cli      # the CLI, plus the `cakeui` runtime it needs
 # or
 uv tool install cakeui-cli
 ```
 
-The runtime alone (what your app depends on):
+If you only depend on the runtime and drive it from your own entry point:
 
 ```bash
 pip install cakeui
 ```
 
+`cakeui-cli[build]` adds Nuitka, if you want packaging installed alongside.
+
 ## Quickstart
 
 ```bash
-cakeui new my-app --template vue-ts     # Vue 3 + TS, scaffolded by Vite
-cakeui new my-app --template react-ts   # React + TS
-cakeui new my-app -p pnpm               # scaffold and install with pnpm
+cakeui new my-app --template vue-ts     # Vue 3 + TypeScript, scaffolded by Vite
 cd my-app
-(cd web && npm install)                 # skipped if `cakeui new` already ran it
 cakeui dev
 ```
 
-`cakeui new` writes:
+`cakeui new` installs dependencies for you when it can. If it skipped them, the
+printed next steps cover it:
+
+```bash
+uv sync
+(cd web && npm install)
+cakeui dev
+```
+
+A window opens on the Vite dev server, with hot reload exactly as in a browser.
+Edit `main.py`, edit a component, save, and both reload.
+
+Then build:
+
+```bash
+cakeui build
+```
+
+On macOS that produces `dist/main.app`, which you can double-click. On Windows
+and Linux it produces a folder or a single executable, depending on
+`[tool.cakeui.build] mode`.
+
+### What `cakeui new` writes
 
 ```
 my-app/
-├── pyproject.toml          # [tool.cakeui] lives here
-├── main.py                 # commands and events
+├── pyproject.toml          the [tool.cakeui] table lives here
+├── main.py                 commands and events
 ├── README.md
-└── web/                    # produced by `npm create vite`, untouched
+├── assets/                 the app icon: .icns, .ico, .png, and .svg source
+└── web/                    produced by `npm create vite`, untouched
     ├── index.html
     ├── package.json
     ├── vite.config.ts
     └── src/
-        ├── main.ts         # one appended line imports ./lib/cakeui/cakeui-boot
-        └── lib/cakeui/     # everything CakeUI generates lives here
-            ├── cakeui-boot.ts  # glue: toasts + one handshake invoke
-            ├── cakeui.js       # generated bridge (git-ignored)
-            └── cakeui.d.ts     # generated types (git-ignored)
+        ├── main.ts         one appended line imports ./lib/cakeui/cakeui-boot
+        └── lib/cakeui/     everything CakeUI generates lives here
+            ├── cakeui-boot.ts   glue: toasts, plus one handshake call at startup
+            ├── cakeui.js        generated bridge
+            └── cakeui.d.ts      generated types
 ```
 
-## Templates
+Nothing of ours lands in `src/` itself. `vite.config.ts`, `index.html` and every
+component are byte for byte what Vite produced, so upgrading Vite never requires
+patching a template.
 
-The frontend is generated by `npm create vite` itself, then CakeUI merges one
-base layer into it, the same split the Tauri CLI uses:
+## The icon
 
-```
-cli/src/cakeui_cli/templates/
-└── _base_/                 # every project gets this
-    ├── main.py             # commands and events
-    ├── pyproject.toml      # [tool.cakeui]
-    ├── README.md
-    ├── _gitignore          # renamed to .gitignore
-    └── web/src/lib/cakeui/cakeui-boot.ts
-```
+`assets/` holds the same picture in each format a platform wants:
 
-| Template | Vite template | Notes |
-|---|---|---|
-| `vue-ts` | `vue-ts` | default; tested end to end |
-| `react-ts` | `react-ts` | |
-| `svelte-ts` | `svelte-ts` | |
-| `vanilla-ts` | `vanilla-ts` | plain TypeScript, no framework |
+| File | Used by |
+|---|---|
+| `assets/icon.icns` | the macOS `.app` bundle |
+| `assets/icon.ico` | the Windows executable and its window |
+| `assets/icon.png` | Linux, plus the window icon during `cakeui dev` |
+| `assets/icon.svg` | the editable source, not shipped in the build |
 
-These are just the names listed in `BUILTIN_TEMPLATES` (`cli/src/cakeui_cli/scaffold.py`),
-used for `--help` and error hints. Any other Vite template name works too
-(`cakeui new app --template solid-ts`). The name goes straight to Vite, so
-supporting a new framework means listing it, not writing a template.
+To use your own artwork, overwrite the files and keep the names. `icon =
+"assets/icon"` in `pyproject.toml` names a group, not a single file: on each
+platform CakeUI takes the first format that exists and falls back to
+`icon.png`. A lone 1024x1024 `icon.png` is enough everywhere, since Nuitka
+converts it to `.icns` on macOS.
 
-Two things CakeUI touches in generated frontend code: it writes `cakeui.js` /
-`cakeui.d.ts` into `src/lib/cakeui/` (so nothing of ours lands in the `src/`
-root), and appends one marked import to the entry file. Everything else
-(`vite.config.ts`, components, `index.html`) is exactly what Vite produced, so
-upgrades never require template surgery. Deleting that one import detaches
-CakeUI and leaves an ordinary web app.
-
-The bridge is a generated file rather than an npm dependency, so a scaffolded
-project typechecks and runs immediately, without waiting for a release on npm.
-
-## Package managers
-
-`npm`, `pnpm`, `yarn` and `bun` are supported through one table in
-`cli/src/cakeui_cli/packages.py`: it decides how to scaffold
-(`pnpm create vite web --template vue-ts`), how to install (`pnpm install`), how
-to run scripts (`pnpm run dev`), and which lockfile means "this project uses it".
-
-```bash
-cakeui new my-app -p pnpm       # explicit
-pnpm dlx cakeui-cli new my-app            # detected from the invoking shell
-cakeui new my-app               # detected from a lockfile in the cwd, else npm
-```
-
-Pick order without `-p`: a lockfile in the current directory, then the package
-manager that launched `cakeui` (that is how `pnpm dlx` / `bunx` propagate), then
-npm. `cakeui dev` applies the same detection to the generated project, so a
-pnpm-scaffolded app is started with `pnpm run dev` and nothing else changes.
-
-The manager is recorded in the generated `README.md` and honoured by the
-automatic install at the end of `cakeui new`; choosing one that is not installed
-fails immediately with the list of managers that are.
-
-## How it works
-
-CakeUI owns pywebview's single `js_api` slot. Every call is one JSON envelope:
-
-```
-JS  ──invoke("greet", {name})──►  window.pywebview.api.dispatch(json)
-                                  └─► validate args (Pydantic) ─► your function
-JS  ◄──{ ok: true, data }──────────  json
-```
-
-Python-to-JavaScript events are delivered with `evaluate_js` into
-`window.__cakeui._dispatch`, so they reach `listen()` handlers without the page
-polling anything.
-
-The same `js/src/index.ts` is built twice: an IIFE bundle (sets `window.cakeui`,
-written next to a no-build `index.html`) and an ESM bundle plus `.d.ts` (written
-into a bundler's source tree). Both are shipped inside the Python package, so the
-runtime and the frontend can never disagree about the protocol.
-
-## Frontend dev server
-
-`cakeui dev` starts the frontend dev server for you:
-
-```
-cakeui dev                       # `run dev` in web/ (npm/pnpm/yarn/bun), then the window
-cakeui dev --url http://localhost:5173   # window only; you run the server yourself
-cakeui dev --debug               # webview inspector + tracebacks in errors
-cakeui dev -- --some-arg         # forwarded to main.py
-```
-
-How the URL is found: the dev server's stdout is scanned for a loopback address,
-because Vite prints its address only after binding a port and may pick a
-different port than configured. When the window closes, the dev server's process
-group is terminated with it, so nothing is left listening.
-
-The command itself is discovered, not assumed:
-
-1. `[tool.cakeui] dev_command` if set (any shell-like string, e.g. `"pnpm run dev"`);
-2. otherwise a `dev` script in `<web>/package.json`, run with the package
-   manager implied by the lockfile (`pnpm-lock.yaml`, `bun.lock`, `yarn.lock`,
-   `package-lock.json`, else `npm`).
-
-Projects without a `package.json` still load their files directly with no dev
-server: `[tool.cakeui] dev_command` is optional, and a frontend with neither a
-`package.json` nor a `dev_command` is served from disk with the IIFE bridge.
+`cakeui info` prints which file the current machine would choose. `cakeui build`
+copies the icon into the artifact, so the packaged app finds it at runtime.
 
 ## Python API
 
@@ -213,17 +178,18 @@ server: `[tool.cakeui] dev_command` is optional, and a frontend with neither a
 from cakeui import App
 
 app = App(
-    title="My App",       # defaults to [tool.cakeui] name
+    title="My App",       # defaults to the [tool.cakeui] name
     width=900,
     height=640,
     min_size=(400, 300),
     resizable=True,
+    icon=None,            # defaults to [tool.cakeui] icon
     debug=False,          # or CAKEUI_DEBUG=1
     private_mode=False,   # False keeps localStorage between runs
 )
 ```
 
-In a project with a `pyproject.toml`, prefer `App.from_config()`, which reads
+Inside a project with a `pyproject.toml`, prefer `App.from_config()`. It reads
 `[tool.cakeui]` and picks up `name`, `web`, `web_dist` and `dev_url`.
 
 ### Commands
@@ -238,7 +204,7 @@ def greet(name: str, excited: bool = False) -> dict[str, str]:
 - Unknown arguments are rejected (`extra="forbid"`), so typos fail loudly.
 - Return values are validated against the return annotation.
 - `async def` works; coroutines are awaited for you.
-- Module-level commands exist too, for commands defined outside `main.py`:
+- Commands defined outside `main.py` use the module-level decorator:
 
 ```python
 from cakeui import App, command
@@ -257,10 +223,10 @@ from cakeui import Window
 
 @app.command
 def notify(text: str, window: Window) -> None:
-    window.emit("toast", {"text": text})   # only this window
+    window.emit("toast", {"text": text})   # this window only
 ```
 
-`window` is provided by CakeUI and never appears in the JavaScript call. It also
+`window` is supplied by CakeUI and never appears in the JavaScript call. It also
 exposes `evaluate(js)`, `show()`, `hide()`, `close()` and `native` as an escape
 hatch.
 
@@ -268,45 +234,42 @@ hatch.
 
 | Direction | Python | JavaScript |
 |---|---|---|
-| Python → JS | `app.emit("toast", {...})` or `window.emit(...)` | `cakeui.listen("toast", fn)` |
-| JS → Python | `@app.on("log")` | `cakeui.emit("log", {...})` |
+| Python to JS | `app.emit("toast", {...})` or `window.emit(...)` | `listen("toast", fn)` |
+| JS to Python | `@app.on("log")` | `emit("log", {...})` |
 
-Events emitted before a window finishes loading are buffered and flushed on load,
-so startup events are not lost.
+Events emitted before a window finishes loading are buffered and flushed on
+load, so startup events are not lost.
 
 ### Resources
 
 ```python
 from cakeui import resource_path
 
-icon = resource_path("assets/icon.png")
+logo = resource_path("assets/logo.png")
 ```
 
-Resolves against the project directory in development and against the app
-directory once packaged (Nuitka `standalone`/`onefile`/`.app` bundles and
-PyInstaller are handled). Override with `CAKEUI_RESOURCE_ROOT` or
+Resolves against the project directory during development, and against the
+artifact directory once packaged (Nuitka folder, onefile and `.app` bundles, and
+PyInstaller are all handled). Override with `CAKEUI_RESOURCE_ROOT` or
 `set_resource_root()`.
 
-The rule that makes this work: after packaging, `__file__` points *inside* the
-artifact, and all bundled data sits next to the `cakeui` package. So the root is
-simply the parent of the package directory. Nuitka's own
-`__compiled__.containing_dir` is **not** it. That is the `--output-dir`, one
-level above the actual artifact.
-
 ### Errors
-
-Raise `CakeUIError` (or a subclass) to send a specific code to the frontend:
 
 ```python
 from cakeui import CakeUIError
 
 @app.command
 def withdraw(amount: float) -> float:
-    raise CakeUIError("Insufficient funds", code="insufficient_funds", details={"amount": amount})
+    raise CakeUIError(
+        "Insufficient funds",
+        code="insufficient_funds",
+        details={"amount": amount},
+    )
 ```
 
-Unhandled exceptions become `code: "internal_error"`; the traceback is only
-included when `debug=True`.
+The frontend receives `code: "insufficient_funds"` and the details object.
+Unhandled exceptions become `code: "internal_error"`, with a traceback only when
+`debug=True`.
 
 ## JavaScript API
 
@@ -315,36 +278,38 @@ npm i cakeui
 ```
 
 ```ts
-import { invoke, listen, emit, ready, CakeUIError, isReady } from "cakeui";
+import { invoke, listen, emit, ready, isReady, CakeUIError } from "cakeui";
 
 const user = await invoke<User>("get_user", { id: 7 });
 
 const unlisten = listen<{ text: string }>("toast", ({ text }) => show(text));
 unlisten();                                   // stop listening
 
-await emit("log", { message: "hello" });      // goes to @app.on("log")
+await emit("log", { message: "hello" });      // reaches @app.on("log")
 
-await ready();                                // resolve once the bridge exists
+await ready();                                // resolve when the bridge exists
 ```
 
-- `invoke` waits for `pywebviewready` on its own (10 s default), so calling it during
-  page load is safe. Use `ready(ms)` if you want to wait with a different budget.
-- Failures throw `CakeUIError` with `code`, `message` and `details`, the same
-  fields the Python error produced.
-- `listen("*", fn)` receives every event as `{ event, payload }`, useful for logging.
-- Classic `<script src="./cakeui.js">` users get the same functions on `window.cakeui`.
+- `invoke` waits for `pywebviewready` on its own (10 s default), so calling it
+  during page load is safe. Use `ready(ms)` for a different budget.
+- Failures throw `CakeUIError`, carrying the same `code`, `message` and `details`
+  the Python side produced.
+- `listen("*", fn)` receives every event as `{ event, payload }`, useful for
+  logging.
+- Without a bundler, drop in the IIFE build and use the same functions on
+  `window.cakeui`.
 
 ## Configuration
 
-Everything CLI-related lives in `pyproject.toml`:
+Everything the CLI needs lives in `pyproject.toml`:
 
 ```toml
 [tool.cakeui]
 name = "MyApp"
 entry = "main.py"
 web = "web"                            # source files
-web_dist = "web/dist"                  # built output; preferred when it exists
-icon = "assets/icon.ico"
+web_dist = "web/dist"                  # built output, preferred when present
+icon = "assets/icon"                   # a stem, a directory, or one filename
 dev_url = "http://localhost:5173"      # fallback if the dev server prints nothing
 dev_command = "npm run dev"            # overrides package.json auto-detection
 
@@ -357,58 +322,160 @@ include_data_dir = ["assets=assets"]
 extra_args = []
 ```
 
-Paths must stay inside the project root: a `../..` typo is a hard error rather
-than a build that reads your whole disk. Unknown keys are rejected too, so
-`web_src` fails instead of silently doing nothing.
+Paths must stay inside the project root: a `../..` typo is an error rather than
+a build that reads your whole disk. Unknown keys are rejected too, so `web_src`
+fails instead of silently doing nothing.
 
-`cakeui build` adds the pieces a packaged app needs without asking: `web/dist`
-is copied into the artifact at the same relative path, `pyproject.toml` ships
-alongside it (that is how `App.from_config()` still finds the project), and
-`cakeui`'s own `_bridge.js` goes in as package data. Everything else (icons,
-console window, extra Nuitka flags) comes from the table above.
+## Building an app
+
+`cakeui build` builds the frontend, then packages it:
+
+```bash
+cakeui build                      # build web/, then compile with Nuitka
+cakeui build --dry-run            # print the exact Nuitka command
+cakeui build --no-web             # reuse the existing web/dist
+cakeui build --mode onefile       # single executable
+cakeui build --output-dir out     # somewhere other than dist/
+```
+
+Output by platform:
+
+| Platform | `standalone` | `onefile` |
+|---|---|---|
+| macOS | `dist/main.app` | `dist/main.app` (pyobjc requires a bundle) |
+| Windows | `dist/main.dist/` | `dist/main.exe` |
+| Linux | `dist/main.dist/` | `dist/main` |
+
+macOS needs Nuitka 4 or newer, because pyobjc only works inside an application
+bundle. The frontend is copied into the artifact at its original relative path,
+`pyproject.toml` ships beside it so `App.from_config()` still finds the project,
+and the icon is copied in as well.
+
+## The dev server
+
+```bash
+cakeui dev                               # run web/'s dev script, then open the window
+cakeui dev --url http://localhost:5173   # window only; you run the server
+cakeui dev --debug                       # inspector, plus tracebacks in errors
+cakeui dev -- --some-arg                 # forwarded to main.py
+```
+
+The URL is read from the dev server's own output, because Vite prints its
+address only after binding a port and may pick a different one than configured.
+Closing the window terminates the server's process group, so nothing is left
+listening.
+
+The command is discovered, not assumed:
+
+1. `[tool.cakeui] dev_command`, if set (any shell-like string, e.g. `"pnpm run dev"`);
+2. otherwise a `dev` script in `<web>/package.json`, run with the package
+   manager implied by the lockfile (`pnpm-lock.yaml`, `bun.lock`, `yarn.lock`,
+   `package-lock.json`, else `npm`).
+
+A project without `package.json` still loads from disk, with no dev server at
+all.
+
+## Package managers
+
+`npm`, `pnpm`, `yarn` and `bun` all work: one table decides how to scaffold, how
+to install, how to run scripts, and which lockfile marks a project as belonging
+to which manager.
+
+```bash
+cakeui new my-app -p pnpm                  # explicit
+pnpm dlx cakeui-cli new my-app             # detected from the invoking shell
+cakeui new my-app                          # detected from a lockfile, else npm
+```
+
+Without `-p` the order is: a lockfile in the current directory, then the manager
+that launched `cakeui` (that is how `pnpm dlx` and `bunx` propagate), then npm.
+`cakeui dev` applies the same detection to the generated project, so a
+pnpm-scaffolded app is started with `pnpm run dev` and nothing else changes.
+
+## Templates
+
+The frontend comes from `npm create vite`, then CakeUI merges one base layer
+over it, the same split the Tauri CLI uses.
+
+| Template | Vite template | Notes |
+|---|---|---|
+| `vue-ts` | `vue-ts` | default, tested end to end |
+| `react-ts` | `react-ts` | |
+| `svelte-ts` | `svelte-ts` | |
+| `vanilla-ts` | `vanilla-ts` | plain TypeScript, no framework |
+
+Those are only the names listed in `BUILTIN_TEMPLATES`, used for `--help` and
+error hints. Any other Vite template works as well, for example `cakeui new app
+--template solid-ts`. The name is passed straight to Vite, so supporting a new
+framework means listing it, not writing a template.
+
+## How it works
+
+CakeUI owns pywebview's single `js_api` slot. Every call is one JSON envelope:
+
+```
+JS  ──invoke("greet", {name})──►  window.pywebview.api.dispatch(json)
+                                  └─► validate args (Pydantic) ─► your function
+JS  ◄──{ ok: true, data }──────────  json
+```
+
+Python to JavaScript events are delivered with `evaluate_js` into
+`window.__cakeui._dispatch`, so they reach `listen()` handlers without the page
+polling anything.
+
+The same `js/src/index.ts` is built twice: an IIFE bundle that sets
+`window.cakeui`, and an ESM bundle with `.d.ts` written into a bundler's source
+tree. Both ship inside the Python package, so the runtime and the frontend can
+never disagree about the protocol.
 
 ## CLI
 
-| Command | Status | Does |
+| Command | Available in | Does |
 |---|---|---|
-| `cakeui new <name> [--template NAME] [-p npm\|pnpm\|yarn\|bun] [--dir PATH] [--force] [--no-install]` | v0.1 | Scaffold with Vite, then merge `_base_` and the bridge |
-| `cakeui dev [--url URL] [--debug] [-- extra args]` | v0.1 | Start the frontend dev server, then the window |
-| `cakeui info` | v0.1 | Print the resolved config and web paths |
-| `cakeui build [--mode standalone\|onefile] [--output-dir PATH] [--no-web] [--dry-run]` | v0.3 | Build the frontend, then package with Nuitka |
-| `cakeui typegen` | planned (v0.4) | Generate TypeScript declarations from commands |
+| `cakeui new <name> [--template NAME] [-p npm\|pnpm\|yarn\|bun] [--dir PATH] [--force] [--no-install]` | v0.1 | Scaffold with Vite, then merge the base layer and the bridge |
+| `cakeui dev [--url URL] [--debug] [-- extra args]` | v0.1 | Start the dev server, then the window |
+| `cakeui info` | v0.1 | Print the resolved config, icon and paths |
+| `cakeui build [--mode standalone\|onefile] [--output-dir PATH] [--no-web] [--dry-run]` | v0.1 | Build the frontend, then package with Nuitka |
+| `cakeui typegen` | planned | Generate TypeScript declarations from Python commands |
 
 ## Limitations
 
-Worth knowing before you commit to this stack:
+Worth knowing before you commit:
 
 - **The window is pywebview.** Native menus, tray icons, dialogs and multi-window
-  behaviour are whatever pywebview provides; there is no Tauri-style native API
-  surface, and CakeUI will not pretend otherwise.
+  behaviour are whatever pywebview provides. There is no Tauri-style native API
+  surface, and CakeUI does not pretend otherwise.
 - **Windows needs the WebView2 runtime.** Plan for detection or a bundled
-  installer; `cakeui build` will handle this when it exists.
-- **Builds are only smoke-tested on macOS.** `cakeui build` was verified end to
-  end there (Nuitka 4.3, `.app` bundle, app launches and finds `web/dist`).
-  Windows (`pythonnet`, WebView2) and Linux (GTK) packaging follow the same
-  recipe but have not been run; treat "launch it on a clean machine" as part of
-  your release checklist.
+  installer in your own release process.
+- **Packaging is smoke-tested on macOS only.** `cakeui build` has been verified
+  end to end there (Nuitka 4.3, `.app` bundle, app launches and finds its
+  assets). Windows (`pythonnet`, WebView2) and Linux (GTK) follow the same recipe
+  but have not been run; treat "launch it on a clean machine" as part of your
+  release checklist.
 - **No command permissions yet.** Any JavaScript in the window can call any
   registered command. Do not load untrusted remote content.
 - **Anonymous types in annotations.** `get_type_hints` cannot resolve classes
   defined inside a function, so keep command argument models at module level.
 - **No `py.typed` marker yet.** The runtime is fully annotated, but without
-  [PEP 561](https://peps.python.org/pep-0561/) downstream `mypy`/`pyright` treats
-  `cakeui` as `Any`. Add the marker when typed downstream users matter; it is a
-  one-line change, and it only takes effect inside a built wheel.
+  [PEP 561](https://peps.python.org/pep-0561/) downstream `mypy` and `pyright`
+  treat `cakeui` as `Any`.
+
+## Roadmap
+
+- `cakeui typegen`: Pydantic models into TypeScript declarations
+- installers, auto-update, and per-command permissions
+- code signing and notarization for built apps
 
 ## Repository layout
 
 ```
-python/    the `cakeui` runtime (App, commands, events, resources, config)
-js/        the `cakeui` npm package; its builds become python/.../_bridge.{js,mjs}
-cli/       the `cakeui-cli` distribution, dev-server supervision, templates
+python/    the `cakeui` runtime: App, commands, events, resources, config
+js/        the `cakeui` npm package; its builds become python/src/cakeui/_bridge.*
+cli/       the `cakeui-cli` distribution: dev server, build, templates
+docs/      the logo, used by this README
 ```
 
-Templates live inside the CLI package rather than at the repo root: that way
+Templates live inside the CLI package rather than at the repository root, so
 `pip install cakeui-cli && cakeui new` works from any directory with no extra
 build step or data-file juggling.
 
@@ -422,12 +489,12 @@ uv run pytest
 npm --prefix js test
 ```
 
-`python/tests/test_bridge.py` fails if any committed `_bridge.*` file drifts from
+`python/tests/test_bridge.py` fails if a committed `_bridge.*` file drifts from
 `js/dist/`, so rebuild after touching `js/src`.
 
-Rendering a template end to end needs Node installed and network access for
-`npm create vite`; set `CAKEUI_TEST_VITE=1` to include those tests, while the
-rest of the CLI suite uses a fake scaffolder and a fake dev server.
+Rendering a template end to end needs Node and network access for `npm create
+vite`; set `CAKEUI_TEST_VITE=1` to include those tests. The rest of the CLI
+suite uses a fake scaffolder and a fake dev server.
 
 ## License
 

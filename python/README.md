@@ -1,6 +1,12 @@
-# cakeui
+<p align="center">
+  <img src="https://raw.githubusercontent.com/InfernalAzazel/cakeui/main/docs/icon.png" width="120" alt="CakeUI">
+</p>
 
-Desktop apps with Python and a web frontend, no Rust or bundler required.
+<h1 align="center">cakeui</h1>
+
+<p align="center">
+  Desktop apps with Python and a web frontend, no Rust or bundler required.
+</p>
 
 This is the runtime package. It wraps [pywebview](https://pywebview.flowrl.com/),
 validates arguments with Pydantic, and ships the JavaScript bridge your frontend
@@ -47,6 +53,7 @@ call from JavaScript is rejected with structured data instead of a string in
 | Pydantic validation | arguments and return values, with structured errors |
 | `Window` injection | `window.emit`, `evaluate`, `show`, `hide`, `close` |
 | `resource_path` | find bundled files in dev and after packaging |
+| window icon | picked per platform from `[tool.cakeui] icon` |
 | `_bridge.js` / `_bridge.mjs` | the prebuilt frontend bridge, copied into your project |
 
 The bridge files are generated from the `js/` directory in the repository, so
