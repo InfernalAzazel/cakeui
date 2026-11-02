@@ -1,6 +1,7 @@
 # 发布到 PyPI：推 `v*` 标签自动发版，也可以在 Actions 页面手动触发。
 #
-# 用 Trusted Publishing，仓库里不存任何 API token。
+# 用 Trusted Publishing，仓库里不存任何 API token。发版成功后，标签触发的那次
+# 还会在仓库里建一条 GitHub Release（版本说明 + 本次贡献者 + 构建产物）。
 #
 # ## 首次发布前要在 PyPI 配两个 pending publisher
 #
@@ -25,6 +26,23 @@
 #
 # PyPI 拒绝任何已存在版本的重传。先把两个 pyproject.toml 的 version 改成同
 # 一个新值，再打同名标签。手动触发不走标签，用 pyproject.toml 里的版本号。
+#
+# ## GitHub Release
+#
+# 只有标签触发才会建：手动触发没有标签，release 会指向一个不存在的 ref。
+#
+# 正文由三块拼成，缺哪块就跳过哪块：
+#
+#   1. 安装命令（永远在最前面，从标签推出精确版本号）
+#   2. 手写的更新日志 `.github/release-notes/vX.Y.Z.md`，没有就用 GitHub 自动
+#      生成的说明（What's Changed / Full Changelog）
+#   3. 本次贡献者：上一个标签以来的所有提交作者，去重、剔掉 bot。没人时整节不出现
+#
+# 更新日志目录下有 README 说明格式。手写说明是正文的第一来源，别在 Release
+# 页面上改：下次重跑会被覆盖回去。
+#
+# 这一步要 `contents: write`。如果仓库的 Settings -> Actions -> General 把
+# workflow 权限设成了只读，这里会 403，改成 "Read and write permissions"。
 
 name: release
 
@@ -145,3 +163,73 @@ jobs:
         with:
           packages-dir: upload/
           verify-metadata: false
+
+  # 发完之后在仓库里留一条可读的版本记录。排在两个上传之后：Release 上挂着的
+  # 产物如果对应的包还没进 PyPI，对用户就是个陷阱。
+  #
+  # 建 Release 交给 softprops/action-gh-release：它的 generate_release_notes
+  # 会自动追加 GitHub 生成的说明（What's Changed / New Contributors / Full
+  # Changelog），body_path 的内容排在这些说明前面。重跑时它找得到已有的 Release
+  # 并更新，不会因为 tag 已发过而失败。
+  github-release:
+    name: 建 GitHub Release
+    needs: [publish-runtime, publish-cli]
+    runs-on: ubuntu-latest
+    # 手动触发没有标签，建 release 会指向一个不存在的 ref，所以只认标签。
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      # 只为读 `.github/release-notes/` 里的手写说明。
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      # 手写说明可选。没有就不传 body_path，正文只剩 GitHub 生成的说明。
+      - name: 组装正文
+        id: notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+
+          {
+            echo "## 安装"
+            echo
+            echo '```bash'
+            echo "pip install cakeui==${version}"
+            echo "pip install \"cakeui-cli[build]==${version}\""
+            echo '```'
+            if [[ -f ".github/release-notes/${TAG}.md" ]]; then
+              echo
+              cat ".github/release-notes/${TAG}.md"
+            else
+              echo "::warning::.github/release-notes/${TAG}.md 不存在，正文只有自动生成的说明。"
+            fi
+          } > notes.md
+
+          # 0.2.0a1 / 0.2.0rc1 这类预发布要标出来，否则会被当成稳定版推荐给所有人。
+          prerelease=false
+          if [[ "$version" =~ (a|b|rc|alpha|beta|dev)[0-9]*$ ]]; then
+            prerelease=true
+          fi
+
+          cat notes.md
+          {
+            echo "body_path=notes.md"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          body_path: ${{ steps.notes.outputs.body_path }}
+          generate_release_notes: true
+          prerelease: ${{ steps.notes.outputs.prerelease }}
+          # 产物已经在上面的 job 里校验过，这里只负责挂上去。
+          files: dist/*
+          fail_on_unmatched_files: true
