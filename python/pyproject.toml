@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cakeui"
-version = "0.1.0"
+version = "0.2.0"
 description = "Build desktop apps with Python and a web frontend. No Rust, no bundler required."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
+authors = [{ name = "kylin", email = "260987762@qq.com" }]
 keywords = ["desktop", "webview", "pywebview", "gui", "pydantic"]
 classifiers = [
     "Development Status :: 3 - Alpha",

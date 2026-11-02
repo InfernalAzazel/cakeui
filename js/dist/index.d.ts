@@ -74,5 +74,5 @@ interface CakeUIInternalApi {
     ready: typeof ready;
     isReady: typeof isReady;
 }
-export declare const version = "0.1.0";
+export declare const version = "0.2.0";
 export {};

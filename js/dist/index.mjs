@@ -1,7 +1,7 @@
-/*! cakeui bridge 0.1.0 */
+/*! cakeui bridge 0.2.0 */
 
 // src/index.ts
-var VERSION = "0.1.0";
+var VERSION = "0.2.0";
 var CakeUIError = class extends Error {
   constructor(code, message, details) {
     super(message);

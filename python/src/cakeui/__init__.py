@@ -52,7 +52,7 @@ __all__ = [
 try:
     __version__ = metadata.version("cakeui")
 except metadata.PackageNotFoundError:  # 从源码 checkout 直接运行时没有包元数据
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
 
 def command(

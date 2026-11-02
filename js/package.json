@@ -1,6 +1,6 @@
 {
   "name": "cakeui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Frontend API for CakeUI: Python desktop apps with a web UI.",
   "license": "Apache-2.0",
   "type": "module",

@@ -106,7 +106,7 @@ def scaffold(
     *,
     template: str = DEFAULT_TEMPLATE,
     force: bool = False,
-    cakeui_requirement: str = ">=0.1.0",
+    cakeui_requirement: str = ">=0.2.0",
     cakeui_source: Path | None = None,
     package_manager: str | PackageManager | None = None,
     runner: ViteRunner | None = None,

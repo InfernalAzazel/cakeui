@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cakeui-cli"
-version = "0.1.0"
-description = "Command line tool for CakeUI desktop apps: new, dev, info, build."
+version = "0.2.0"
+description = "Command line tool for CakeUI desktop apps: new, dev, info, sync, build."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
+authors = [{ name = "kylin", email = "260987762@qq.com" }]
 keywords = ["cakeui", "desktop", "webview", "scaffolding"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -21,7 +22,7 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
-    "cakeui>=0.1.0",
+    "cakeui>=0.2.0",
 ]
 
 [project.optional-dependencies]

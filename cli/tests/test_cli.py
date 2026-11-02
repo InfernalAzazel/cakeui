@@ -115,7 +115,7 @@ def test_placeholders_are_substituted(tmp_path: Path) -> None:
     pyproject = (project / "pyproject.toml").read_text("utf-8")
     assert 'name = "my-notes-app"' in pyproject
     assert 'name = "My Notes App"' in pyproject
-    assert '"cakeui>=0.1.0"' in pyproject
+    assert '"cakeui>=0.2.0"' in pyproject
     assert 'web_dist = "web/dist"' in pyproject
 
     readme = (project / "README.md").read_text("utf-8")

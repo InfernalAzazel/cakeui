@@ -31,7 +31,7 @@ wheels = [
 
 [[package]]
 name = "cakeui"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "python" }
 dependencies = [
     { name = "pydantic" },
@@ -46,7 +46,7 @@ requires-dist = [
 
 [[package]]
 name = "cakeui-cli"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "cli" }
 dependencies = [
     { name = "cakeui" },

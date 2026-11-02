@@ -7,7 +7,7 @@
  * bundled bridge and the npm package can never drift apart.
  */
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
