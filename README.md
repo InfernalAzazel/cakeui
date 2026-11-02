@@ -150,6 +150,21 @@ Nothing of ours lands in `src/` itself. `vite.config.ts`, `index.html` and every
 component are byte for byte what Vite produced, so upgrading Vite never requires
 patching a template.
 
+## A complete example
+
+`examples/vue-notes/` is a working notes app: a JSON file, one Python module, and
+one Vue component, using `invoke`, `emit` and `listen` in both directions.
+
+```bash
+cd examples/vue-notes
+uv sync
+npm --prefix web install
+uv run cakeui dev
+```
+
+`examples/vue-notes/README.md` walks through what each file demonstrates, and it
+is the shortest path to seeing how the pieces fit together.
+
 ## The icon
 
 `assets/` holds the same picture in each format a platform wants:
@@ -204,6 +219,30 @@ def greet(name: str, excited: bool = False) -> dict[str, str]:
 - Unknown arguments are rejected (`extra="forbid"`), so typos fail loudly.
 - Return values are validated against the return annotation.
 - `async def` works; coroutines are awaited for you.
+- Annotations can be Pydantic models, in both directions. A `Note` argument arrives
+  as a validated `Note` instance, `list[Note]` comes back as the list the frontend
+  expects, and a bad payload is rejected before the body runs:
+
+```python
+from datetime import datetime
+
+from pydantic import BaseModel
+
+class Note(BaseModel):
+    id: int
+    text: str
+    done: bool = False
+    created_at: datetime
+
+@app.command
+def save_note(note: Note) -> list[Note]:
+    ...
+```
+
+`str`, `int`, `float`, `bool`, `list[str]`, `dict`, `Literal`, `Optional` and
+`datetime` / `Path` / `UUID` / `Enum` / dataclasses all work the same way: Pydantic
+parses them on the way in, and the bridge serialises them on the way out. A
+`ValidationError` is returned as `code: "validation_error"` with per-field details.
 - Commands defined outside `main.py` use the module-level decorator:
 
 ```python
@@ -239,6 +278,18 @@ hatch.
 
 Events emitted before a window finishes loading are buffered and flushed on
 load, so startup events are not lost.
+
+A handler may annotate its payload with a Pydantic model and get it validated,
+exactly like a command argument:
+
+```python
+class LogLine(BaseModel):
+    message: str
+
+@app.on("log")
+def on_log(line: LogLine) -> None:
+    print(line.message)
+```
 
 ### Resources
 
@@ -503,6 +554,7 @@ Worth knowing before you commit:
 python/    the `cakeui` runtime: App, commands, events, resources, config
 js/        the bridge source; its builds become python/src/cakeui/_bridge.*
 cli/       the `cakeui-cli` distribution: dev server, build, templates
+examples/  runnable apps, `vue-notes` being the reference one
 docs/      the logo, used by this README
 ```
 

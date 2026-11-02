@@ -1,0 +1,18 @@
+[project]
+name = "vue-notes"
+version = "0.1.0"
+description = "Vue Notes, the CakeUI example app"
+requires-python = ">=3.11"
+dependencies = ["cakeui>=0.2.0"]
+
+[tool.cakeui]
+name = "Vue Notes"
+entry = "main.py"
+web = "web"
+web_dist = "web/dist"
+icon = "assets/icon"
+
+[tool.cakeui.build]
+mode = "standalone"
+console = false
+include_packages = ["pydantic", "pydantic_core"]
