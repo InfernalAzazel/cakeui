@@ -6,10 +6,24 @@ sitting, real enough to show the parts that matter.
 
 ```bash
 cd examples/vue-notes
-uv sync
-npm --prefix web install
+uv sync                    # cakeui + cakeui-cli, installed from PyPI
+npm --prefix web install   # once: Vite, Vue, the TypeScript toolchain
 uv run cakeui dev
 ```
+
+To run the example against the CakeUI checkout in this repository instead of the
+published packages, point `uv` at the workspace root:
+
+```bash
+uv run --project ../.. cakeui dev
+```
+
+Already have it built? `uv run python main.py` opens the window on `web/dist`
+without starting a dev server. Neither of those needs `cakeui` on your PATH.
+
+A note on `uv run`: `uv` finds the project in `examples/vue-notes`, so it uses
+that `.venv` (where `cakeui-cli` is a dev dependency) rather than anything you
+installed globally. Nothing has to be on your PATH.
 
 A window opens on the Vite dev server. Notes are written to a JSON file in your
 user-data directory, so they survive a restart:
@@ -108,7 +122,6 @@ terminal that is running the app.
 ```bash
 uv run cakeui build
 ```
-
 On macOS this produces `dist/main.app`. The icon in `assets/` is the CakeUI
 default; replace the files and keep the names to make it yours.
 

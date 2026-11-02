@@ -168,14 +168,20 @@ button:disabled {
 
 .failure {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--danger) 8%, transparent);
   font-size: 0.8125rem;
+}
+
+.failure-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .failure strong {
@@ -192,6 +198,32 @@ button:disabled {
   color: var(--danger);
   font-size: 1.05rem;
   line-height: 1;
+}
+
+/* `details` only arrives when Python sends something, e.g. the traceback under
+   CAKEUI_DEBUG=1. Keep it collapsed by default: it is for reading, not glancing. */
+.trace summary {
+  width: fit-content;
+  color: var(--danger);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.trace pre {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Notes ------------------------------------------------------------------- */

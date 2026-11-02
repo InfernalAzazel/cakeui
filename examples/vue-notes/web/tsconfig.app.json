@@ -1,9 +1,33 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+    /* Target and library: Vite targets modern browsers, so does this. */
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
+    "useDefineForClassFields": true,
+
+    /* Bundler mode: Vite resolves imports, TypeScript only type-checks them. */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "allowArbitraryExtensions": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+
+    /* Vue: .vue files go through vue-tsc, and JSX stays for the toolchain. */
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+
+    /* Correctness */
+    "strict": true,
+    "noImplicitThis": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
 
     /* Linting */
     "noUnusedLocals": true,

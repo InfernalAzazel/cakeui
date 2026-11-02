@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+.venv/
+build/
+/dist/
+*.egg-info/
+
+# Node: web/ has its own .gitignore for this
+node_modules/
+
+# Examples follow the published releases rather than a frozen graph; `uv sync`
+# resolves a lock on demand.
+uv.lock
+
+.DS_Store

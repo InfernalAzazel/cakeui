@@ -41,12 +41,29 @@ const canAdd = computed(() => draftLength.value > 0 && !tooLong.value);
 /** Turn anything thrown by the bridge into the shape the banner renders. */
 function describe(error: unknown): Failure {
   if (error instanceof CakeUIError) {
+    // `code` is for branching; `details` is for whoever has to read it. Under
+    // CAKEUI_DEBUG=1 Python puts the traceback there, so mirror it in DevTools
+    // as well as in the banner.
+    console.error(`[cakeui] ${error.code}: ${error.message}`, error.details ?? "");
     return { code: error.code, message: error.message, details: error.details };
   }
   return {
     code: "unknown",
     message: error instanceof Error ? error.message : String(error),
   };
+}
+
+/** `details` is arbitrary JSON: a traceback reads as-is, anything else as JSON. */
+function formatDetails(details: unknown): string {
+  if (typeof details === "string") {
+    return details;
+  }
+  if (details && typeof details === "object" && "traceback" in details) {
+    const { traceback, ...rest } = details as Record<string, unknown>;
+    const extra = Object.keys(rest).length ? JSON.stringify(rest, null, 2) : "";
+    return [String(traceback ?? "").trim(), extra].filter(Boolean).join("\n\n");
+  }
+  return JSON.stringify(details, null, 2);
 }
 
 /**
@@ -181,13 +198,19 @@ onUnmounted(() => stopListening?.());
       <span v-if="tooLong">· too long, Python will refuse it</span>
     </p>
 
-    <p v-if="failure" class="failure" role="alert">
-      <strong>{{ failure.code }}</strong>
-      <span>{{ failure.message }}</span>
-      <button type="button" class="dismiss" @click="failure = null" aria-label="Dismiss">
-        &times;
-      </button>
-    </p>
+    <div v-if="failure" class="failure" role="alert">
+      <div class="failure-head">
+        <strong>{{ failure.code }}</strong>
+        <span>{{ failure.message }}</span>
+        <button type="button" class="dismiss" @click="failure = null" aria-label="Dismiss">
+          &times;
+        </button>
+      </div>
+      <details v-if="failure.details" class="trace">
+        <summary>details</summary>
+        <pre>{{ formatDetails(failure.details) }}</pre>
+      </details>
+    </div>
 
     <ul v-if="notes.length" class="notes">
       <li v-for="note in notes" :key="note.id" :class="{ done: note.done }">

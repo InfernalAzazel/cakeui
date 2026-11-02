@@ -5,6 +5,12 @@ description = "Vue Notes, the CakeUI example app"
 requires-python = ">=3.11"
 dependencies = ["cakeui>=0.2.0"]
 
+# The runtime (`cakeui`) is what the app itself imports; the CLI (`cakeui-cli`)
+# is only needed to run and package it. Keeping it in a dev group means a fresh
+# clone can say `uv run cakeui dev` without installing anything globally.
+[dependency-groups]
+dev = ["cakeui-cli>=0.2.0"]
+
 [tool.cakeui]
 name = "Vue Notes"
 entry = "main.py"
