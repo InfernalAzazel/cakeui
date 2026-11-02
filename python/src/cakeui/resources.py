@@ -9,7 +9,7 @@ from pathlib import Path
 ENV_RESOURCE_ROOT = "CAKEUI_RESOURCE_ROOT"
 
 # cakeui 包自己的目录。打包后它就在应用产物目录里面（<dist>/cakeui/），
-# 所以父目录就是应用根目录——见 _nuitka_root。
+# 所以父目录就是应用根目录，见 _nuitka_root。
 _PACKAGE_DIR = Path(__file__).resolve().parent
 
 # 由 set_resource_root 写入的显式覆盖值，优先级最高。
@@ -34,7 +34,7 @@ def _nuitka_root() -> Path | None:
     - ``onefile``：解压出来的临时目录，布局同样是 ``<临时目录>/cakeui/...``。
 
     两种情况都满足"包目录的父目录 = 应用根目录"，所以不用分别处理。
-    注意不能用 ``__compiled__.containing_dir``——它指向 ``--output-dir``，
+    注意不能用 ``__compiled__.containing_dir``：它指向 ``--output-dir``，
     而不是真正运行的产物目录。
     """
     if globals().get("__compiled__") is None:

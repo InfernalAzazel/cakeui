@@ -1,4 +1,4 @@
-"""{{display_name}} — a CakeUI desktop app.
+"""{{display_name}}: a CakeUI desktop app.
 
 `cakeui dev` starts the frontend dev server, waits for it to report a URL, and
 opens the window on that URL. Closing the window shuts the dev server down.

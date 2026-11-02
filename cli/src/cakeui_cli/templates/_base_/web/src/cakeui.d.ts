@@ -1,4 +1,4 @@
-// 占位类型声明 —— 仅供模板自己在仓库里通过类型检查。
+// 占位类型声明：仅供模板自己在仓库里通过类型检查。
 //
 // `cakeui new` 会在写完模板之后再生成真正的 cakeui.js / cakeui.d.ts，把本文件
 // 覆盖掉（见 scaffold.py：先 _merge，再 ensure_bridge_module）。所以这里只需要

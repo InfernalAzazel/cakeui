@@ -48,7 +48,7 @@ def create_vite(
     用法完全一样，只是会留下各自的 lockfile）。
 
     Vite 先在临时目录里运行，再把结果合并到目标位置：这样 ``--force`` 能正常
-    工作，也绝不会撞上 Vite 自己的"目录非空"交互提示——这里是纯非交互的。
+    工作，也绝不会撞上 Vite 自己的"目录非空"交互提示，因为这里是纯非交互的。
     """
     manager = manager or packages.get(packages.DEFAULT)
     packages.ensure_available(manager)
@@ -125,7 +125,7 @@ def attach_boot(entry: Path) -> bool:
         return False
 
     addition = (
-        f"\n{BOOT_MARKER} — 由 `cakeui new` 添加；删掉这一行即解除与 CakeUI 的绑定。\n"
+        f"\n{BOOT_MARKER}: 由 `cakeui new` 添加；删掉这一行即解除与 CakeUI 的绑定。\n"
         f'import "./{BOOT_MODULE}";\n'
     )
     entry.write_text(original.rstrip("\n") + "\n" + addition, "utf-8")

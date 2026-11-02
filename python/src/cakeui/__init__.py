@@ -1,4 +1,4 @@
-"""CakeUI —— 用 Python 写后端、用 Web 技术写界面的桌面应用框架。
+"""CakeUI：用 Python 写后端、用 Web 技术写界面的桌面应用框架。
 
 不需要 Rust 工具链，也不强制打包步骤。窗口、命令、事件都由 Python 侧管理，
 前端通过 ``invoke`` / ``listen`` / ``emit`` 与之通信。

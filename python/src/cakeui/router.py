@@ -1,7 +1,7 @@
 """藏在 pywebview ``js_api`` 后面的 JSON 信封路由。
 
 前端每次调用都是一条 ``{t: "invoke" | "emit", ...}`` 消息，这里返回
-``{ok: true, data}`` 或 ``{ok: false, error}``。异常绝不外抛——跨越 pywebview
+``{ok: true, data}`` 或 ``{ok: false, error}``。异常绝不外抛，因为跨越 pywebview
 的线程边界之后没人能接住它。
 """
 
