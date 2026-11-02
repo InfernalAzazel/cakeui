@@ -25,6 +25,30 @@ from .errors import (
 from .resources import resource_path, resource_root, set_resource_root
 from .window import Window
 
+# 这里是包对外的门面：上面的名字导入进来就是为了让用户 `from cakeui import ...`。
+# 写 __all__ 有两个实在的用处：类型检查器靠它认出"再导出"（否则每个名字都报
+# reportUnusedImport），同时它就是公开 API 的清单。
+__all__ = [
+    "App",
+    "BadRequestError",
+    "BridgeError",
+    "BuildConfig",
+    "CakeUIConfig",
+    "CakeUIError",
+    "CommandNotFoundError",
+    "CommandValidationError",
+    "ConfigError",
+    "Window",
+    "WindowNotReadyError",
+    "__version__",
+    "command",
+    "find_pyproject",
+    "load_config",
+    "resource_path",
+    "resource_root",
+    "set_resource_root",
+]
+
 try:
     __version__ = metadata.version("cakeui")
 except metadata.PackageNotFoundError:  # 从源码 checkout 直接运行时没有包元数据
