@@ -56,8 +56,11 @@ call from JavaScript is rejected with structured data instead of a string in
 | window icon | picked per platform from `[tool.cakeui] icon` |
 | `_bridge.js` / `_bridge.mjs` | the prebuilt frontend bridge, copied into your project |
 
-The bridge files are generated from the `js/` directory in the repository, so
-the runtime and the npm package cannot drift apart.
+The bridge files are built from the `js/` directory in the repository and
+committed here, so the frontend you import and the runtime that answers it can
+never disagree about the protocol. There is no separate npm package to install:
+`cakeui new` writes `cakeui.js` and `cakeui.d.ts` into your project, and every
+`cakeui dev` refreshes them.
 
 ## Documentation
 

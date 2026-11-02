@@ -273,12 +273,14 @@ Unhandled exceptions become `code: "internal_error"`, with a traceback only when
 
 ## JavaScript API
 
-```bash
-npm i cakeui
-```
+There is nothing to install. The bridge is a generated file inside your project:
+`cakeui new` writes `web/src/lib/cakeui/cakeui.js` and `cakeui.d.ts`, and every
+`cakeui dev` refreshes them from the copy that ships inside the Python package.
+The frontend and the runtime therefore cannot drift apart, and there is no
+package version to keep in sync.
 
 ```ts
-import { invoke, listen, emit, ready, isReady, CakeUIError } from "cakeui";
+import { invoke, listen, emit, ready, isReady, CakeUIError } from "./lib/cakeui/cakeui.js";
 
 const user = await invoke<User>("get_user", { id: 7 });
 
@@ -295,9 +297,19 @@ await ready();                                // resolve when the bridge exists
 - Failures throw `CakeUIError`, carrying the same `code`, `message` and `details`
   the Python side produced.
 - `listen("*", fn)` receives every event as `{ event, payload }`, useful for
-  logging.
-- Without a bundler, drop in the IIFE build and use the same functions on
-  `window.cakeui`.
+  logging. `once`, `off` and `isReady` are there too.
+- The generated files are build output. Edit `js/src/index.ts` in the repository
+  instead, then run `npm --prefix js run build`.
+
+Without a bundler, CakeUI writes a different file next to `index.html`: an IIFE
+build that sets `window.cakeui` and needs no import at all.
+
+```html
+<script src="./cakeui.js"></script>
+<script>
+  window.cakeui.invoke("greet", { name: "Ada" }).then(console.log);
+</script>
+```
 
 ## Configuration
 
@@ -459,10 +471,15 @@ Worth knowing before you commit:
 - **No `py.typed` marker yet.** The runtime is fully annotated, but without
   [PEP 561](https://peps.python.org/pep-0561/) downstream `mypy` and `pyright`
   treat `cakeui` as `Any`.
+- **The bridge is not on npm.** It is generated into the project, which is what
+  makes `cakeui new` work offline and keeps the protocol versioned with the
+  runtime. A frontend built outside a CakeUI project has to copy
+  `python/src/cakeui/_bridge.mjs` in by hand for now.
 
 ## Roadmap
 
 - `cakeui typegen`: Pydantic models into TypeScript declarations
+- publish the bridge to npm, for frontends that start outside `cakeui new`
 - installers, auto-update, and per-command permissions
 - code signing and notarization for built apps
 
@@ -470,7 +487,7 @@ Worth knowing before you commit:
 
 ```
 python/    the `cakeui` runtime: App, commands, events, resources, config
-js/        the `cakeui` npm package; its builds become python/src/cakeui/_bridge.*
+js/        the bridge source; its builds become python/src/cakeui/_bridge.*
 cli/       the `cakeui-cli` distribution: dev server, build, templates
 docs/      the logo, used by this README
 ```
