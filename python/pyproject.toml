@@ -6,8 +6,9 @@ build-backend = "hatchling.build"
 name = "cakeui"
 version = "0.1.0"
 description = "Build desktop apps with Python and a web frontend. No Rust, no bundler required."
+readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { file = "LICENSE" }
 keywords = ["desktop", "webview", "pywebview", "gui", "pydantic"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -24,8 +25,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cakeui/cakeui"
-Repository = "https://github.com/cakeui/cakeui"
+Homepage = "https://github.com/InfernalAzazel/cakeui"
+Repository = "https://github.com/InfernalAzazel/cakeui"
+Issues = "https://github.com/InfernalAzazel/cakeui/issues"
+Changelog = "https://github.com/InfernalAzazel/cakeui/commits/main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cakeui"]

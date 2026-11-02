@@ -6,14 +6,18 @@ build-backend = "hatchling.build"
 name = "cakeui-cli"
 version = "0.1.0"
 description = "Command line tool for CakeUI desktop apps: new, dev, info, build."
+readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { file = "LICENSE" }
 keywords = ["cakeui", "desktop", "webview", "scaffolding"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
@@ -26,6 +30,12 @@ build = ["nuitka>=4.0"]
 
 [project.scripts]
 cakeui = "cakeui_cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/InfernalAzazel/cakeui"
+Repository = "https://github.com/InfernalAzazel/cakeui"
+Issues = "https://github.com/InfernalAzazel/cakeui/issues"
+Changelog = "https://github.com/InfernalAzazel/cakeui/commits/main"
 
 [tool.uv.sources]
 cakeui = { workspace = true }
