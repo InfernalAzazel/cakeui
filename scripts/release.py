@@ -158,6 +158,27 @@ def run(argv: list[str], what: str, *, dry_run: bool) -> None:
         sys.exit(f"{what} 失败（退出码 {completed.returncode}）。")
 
 
+def scaffold_notes(new: str, *, dry_run: bool) -> None:
+    """放一个发布说明的空壳，免得发版时那一步悄悄回退。
+
+    只在文件不存在时创建：已经写好的说明不能被覆盖。模板里的标题就是工作流预期
+    的分节，写的时候照着填即可。
+    """
+    path = ROOT / ".github" / "release-notes" / f"v{new}.md"
+    if path.is_file():
+        print(f"› 发布说明已存在：{path.relative_to(ROOT)}")
+        return
+
+    print(f"› 新建发布说明：{path.relative_to(ROOT)}")
+    if dry_run:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "## 新特性\n\n- \n\n## 修复\n\n- \n\n## 升级须知\n\n",
+        "utf-8",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="把 CakeUI 的所有版本声明改到同一个新值。",
@@ -166,12 +187,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="只打印会改哪些文件，不写入也不提交。"
     )
-    parser.add_argument(
-        "--no-commit", action="store_true", help="改完文件就停，不提交、不打标签。"
-    )
-    parser.add_argument(
-        "--no-tag", action="store_true", help="提交但不打标签。"
-    )
+    parser.add_argument("--no-commit", action="store_true", help="改完文件就停，不提交、不打标签。")
+    parser.add_argument("--no-tag", action="store_true", help="提交但不打标签。")
     args = parser.parse_args(argv)
 
     new = args.version.removeprefix("v")
@@ -193,6 +210,10 @@ def main(argv: list[str] | None = None) -> int:
     # 派生文件：lockfile 和桥接产物都带着版本号，必须跟着重新生成。
     run(["uv", "lock"], "刷新 uv.lock", dry_run=args.dry_run)
     run(["npm", "--prefix", "js", "run", "build"], "重建桥接产物", dry_run=args.dry_run)
+
+    # 发布说明必须落在标签指向的提交里：工作流从 tag 的 tree 读这个文件，晚一步
+    # 提交就会读不到，Release 正文悄悄退化成自动生成的说明。
+    scaffold_notes(new, dry_run=args.dry_run)
 
     if args.dry_run:
         print("\n--dry-run：没有写入任何文件。")
