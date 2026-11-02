@@ -200,6 +200,7 @@ def _nuitka_argv(config: CakeUIConfig, mode: str, out_dir: Path, web_assets: Pat
     """
     root = config.root.resolve()
     web_relative = _relative(web_assets, root)
+    icon = _require_icon(config)
 
     argv = [
         sys.executable,
@@ -214,10 +215,11 @@ def _nuitka_argv(config: CakeUIConfig, mode: str, out_dir: Path, web_assets: Pat
         # 运行时 App.from_config() 依赖它，没有它打包后的应用启动就失败。
         "--include-data-files=pyproject.toml=pyproject.toml",
         *RUNTIME_PACKAGE_DATA,
+        *_icon_data_args(config, icon),
     ]
     argv += [f"--include-package={name}" for name in config.build.include_packages]
     argv += [f"--include-data-dir={_data_dir_spec(item)}" for item in config.build.include_data_dir]
-    argv += _platform_args(config)
+    argv += _platform_args(config, icon)
     argv += config.build.extra_args
     # 入口放最后，和手敲 nuitka 命令的习惯一致。
     argv.append(config.entry)
@@ -238,26 +240,74 @@ def _mode_args(mode: str) -> list[str]:
     return ["--standalone" if standalone else "--onefile"]
 
 
-def _platform_args(config: CakeUIConfig) -> list[str]:
+def _platform_args(config: CakeUIConfig, icon: Path | None) -> list[str]:
     """平台相关的开关：动态导入的包、图标、控制台窗口。"""
     argv: list[str] = []
 
     if sys.platform == "darwin":
         argv += [f"--include-package={name}" for name in DARWIN_INCLUDE]
         # macOS 现在总是打 .app bundle，所以图标可以正常挂上去。
-        if config.icon:
-            argv.append(f"--macos-app-icon={config.icon}")
+        if icon is not None:
+            argv.append(f"--macos-app-icon={icon}")
     elif sys.platform == "win32":
         argv += [f"--include-package={name}" for name in WINDOWS_INCLUDE]
         if not config.build.console:
             # 桌面应用默认不该弹出一个黑色控制台窗口。
             argv.append("--windows-disable-console")
-        if config.icon:
-            argv.append(f"--windows-icon-from-ico={config.icon}")
-    elif config.icon:
-        argv.append(f"--linux-icon={config.icon}")
+        if icon is not None:
+            argv.append(f"--windows-icon-from-ico={icon}")
+    elif icon is not None:
+        argv.append(f"--linux-icon={icon}")
 
     return argv
+
+
+def _require_icon(config: CakeUIConfig) -> Path | None:
+    """解析出这次打包要用的图标文件。
+
+    配置了 ``icon`` 却找不到文件时在这里就失败：Nuitka 对缺失图标的报错很晚，
+    而且不说是哪个路径，排查起来比直接提示候选路径费劲得多。
+    """
+    if not config.icon:
+        return None
+
+    found = config.resolve_icon()
+    if found is None:
+        raise BuildError(
+            f"找不到图标文件：{config.icon}",
+            details={
+                "searched": [str(path) for path in config.icon_candidates()],
+                "hint": "把图标放进项目里，或者删掉 [tool.cakeui] 的 icon。",
+            },
+        )
+    return found
+
+
+def _icon_data_args(config: CakeUIConfig, icon: Path | None) -> list[str]:
+    """把图标文件原样放进产物。
+
+    ``--macos-app-icon`` / ``--windows-icon-from-ico`` 只是让 Nuitka 把它嵌进
+    bundle 和 exe；运行时 pywebview 要自己读这个文件（Linux 和开发模式都是），
+    所以同一份文件还得按原来的相对路径落在产物目录里。
+    """
+    if icon is None:
+        return []
+
+    root = config.root.resolve()
+    specs: list[str] = []
+    seen: set[str] = set()
+    # 顺序固定：先解析出来的那个，再补同名的其他格式（有就一起带上）。
+    for path in [icon, *config.icon_candidates()]:
+        if not path.is_file():
+            continue
+        relative = _relative(path, root)
+        if Path(relative).is_absolute():
+            continue  # 项目外的图标只能嵌进 bundle，运行时按绝对路径找不到
+        if relative in seen:
+            continue
+        seen.add(relative)
+        specs.append(f"--include-data-files={relative}={relative}")
+    return specs
 
 
 def _data_dir_spec(item: str) -> str:

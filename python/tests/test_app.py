@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -147,3 +148,71 @@ def test_debug_env_flag(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CAKEUI_DEBUG", "1")
     assert App().debug is True
     assert App(debug=False).debug is False
+
+
+def add_icon(project: Path, *names: str) -> Path:
+    """给测试项目配上 `icon = "assets/icon"`，并按需放几个图标文件。"""
+    pyproject = project / "pyproject.toml"
+    pyproject.write_text(pyproject.read_text("utf-8") + '\nicon = "assets/icon"\n', "utf-8")
+    assets = project / "assets"
+    assets.mkdir(exist_ok=True)
+    for name in names:
+        (assets / name).write_bytes(b"\x00")
+    return assets
+
+
+@pytest.mark.parametrize(
+    ("platform", "filename"),
+    [("darwin", "icon.icns"), ("win32", "icon.ico"), ("linux", "icon.png")],
+)
+def test_the_window_icon_matches_the_platform(
+    project: Path, monkeypatch: pytest.MonkeyPatch, platform: str, filename: str
+) -> None:
+    """窗口图标不只是打包时的事：`cakeui dev` 里也得有。"""
+    add_icon(project, "icon.icns", "icon.ico", "icon.png")
+    monkeypatch.setattr(sys, "platform", platform)
+
+    assert App.from_config(project).window_icon() == str(project / "assets" / filename)
+
+
+def test_a_missing_icon_is_not_an_error(project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """图标只是外观，缺文件不该让应用起不来。"""
+    add_icon(project)
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    assert App.from_config(project).window_icon() is None
+
+
+def test_windows_never_gets_a_png_window_icon(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """winforms 后端用的是 System.Drawing.Icon，传 PNG 会在建窗口时抛异常。"""
+    add_icon(project, "icon.png")
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    assert App.from_config(project).window_icon() is None
+
+
+def test_an_explicit_icon_wins_over_the_config(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    add_icon(project, "icon.png")
+    other = project / "branding.png"
+    other.write_bytes(b"\x00")
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    app = App.from_config(project, icon=other)
+
+    assert app.window_icon() == str(other)
+
+
+def test_a_relative_explicit_icon_resolves_from_the_project(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (project / "logo.png").write_bytes(b"\x00")
+    monkeypatch.setattr(sys, "platform", "linux")
+    from cakeui.resources import set_resource_root
+
+    set_resource_root(project)
+
+    assert App(icon="logo.png").window_icon() == str(project / "logo.png")

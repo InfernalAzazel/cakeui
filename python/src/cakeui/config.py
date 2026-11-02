@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import tomllib
 from pathlib import Path
 from typing import Any, Literal
@@ -12,6 +13,18 @@ from .errors import ConfigError
 from .resources import program_dir, resource_root
 
 DEFAULT_CONFIG_FILE = "pyproject.toml"
+
+# 各平台认的原生图标格式，按优先级排列。
+#
+# 同一个 ``icon = "assets/icon"`` 在 macOS 上挑 .icns、Windows 上挑 .ico、
+# Linux 上挑 .png：用户换图标时把整套文件放进同一个目录就行，配置不用动。
+ICON_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "darwin": (".icns", ".png"),
+    "win32": (".ico", ".png"),
+    "linux": (".png", ".svg"),
+}
+# 不认识的平台按这个顺序找，.png 是唯一哪里都能读的格式。
+DEFAULT_ICON_SUFFIXES = (".png", ".icns", ".ico", ".svg")
 
 
 class BuildConfig(BaseModel):
@@ -79,6 +92,33 @@ class CakeUIConfig(BaseModel):
             if candidate.is_file():
                 return candidate
         return None
+
+    def icon_candidates(self, platform: str | None = None) -> list[Path]:
+        """按平台优先级列出候选图标，可能一个都不存在。
+
+        ``icon`` 可以写全文件名（``assets/logo.png``）、只写主干
+        （``assets/icon``）或者写目录（``assets``，目录里的文件要叫 ``icon.*``）。
+        前一种完全按写的来，后两种才按平台去补扩展名：这样"换成自己的图标"
+        只需要覆盖文件，``pyproject.toml`` 一个字都不用改。
+        """
+        if not self.icon:
+            return []
+
+        base = self.root / self.icon
+        if base.is_dir():
+            base = base / "icon"
+
+        suffixes = ICON_SUFFIXES.get(platform or sys.platform, DEFAULT_ICON_SUFFIXES)
+        derived = [base.with_suffix(suffix) for suffix in suffixes]
+        if base.suffix:
+            # 写全了文件名就先信它，再退回同名的平台格式，让 .png 也能在
+            # macOS 上凑合（Nuitka 会自己转成 .icns）。
+            return [base, *(path for path in derived if path != base)]
+        return derived
+
+    def resolve_icon(self, platform: str | None = None) -> Path | None:
+        """第一个真实存在的候选图标；没配或者文件不全时返回 ``None``。"""
+        return next((path for path in self.icon_candidates(platform) if path.is_file()), None)
 
     def validate_paths(self) -> None:
         """拒绝跑到项目目录之外的路径，免得一个笔误让打包读到整块磁盘。"""

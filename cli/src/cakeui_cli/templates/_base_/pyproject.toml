@@ -10,6 +10,7 @@ name = "{{display_name}}"
 entry = "main.py"
 web = "web"
 web_dist = "web/dist"
+icon = "assets/icon"
 package_manager = "{{package_manager}}"
 
 [tool.cakeui.build]

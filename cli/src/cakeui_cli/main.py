@@ -329,6 +329,10 @@ def cmd_info(args: argparse.Namespace) -> int:
         value = getattr(config, field)
         if value:
             console.detail(f"{field:<15} {value}")
+    if config.icon:
+        # 一个 icon 配置对应一整套文件，这里说清楚这台机器上实际会用哪一个。
+        resolved = config.resolve_icon()
+        console.detail(f"{'icon file':<15} {resolved if resolved else '(not found)'}")
     console.detail(f"index.html {'-> ' + str(index) if index else '(not found)'}")
 
     dev_command = detect_dev_command(config)

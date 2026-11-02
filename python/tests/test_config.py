@@ -149,3 +149,47 @@ def test_invalid_toml_is_reported(tmp_path: Path) -> None:
     write_pyproject(tmp_path, "[tool.cakeui\nname = 1")
     with pytest.raises(ConfigError, match="TOML 不合法"):
         load_config(tmp_path)
+
+
+def test_icon_candidates_follow_the_platform(tmp_path: Path) -> None:
+    write_pyproject(tmp_path, '[tool.cakeui]\nname = "X"\nicon = "assets/icon"\n')
+    config = load_config(tmp_path)
+
+    assert config.icon_candidates("darwin")[0].name == "icon.icns"
+    assert config.icon_candidates("win32")[0].name == "icon.ico"
+    assert config.icon_candidates("linux")[0].name == "icon.png"
+
+
+def test_a_full_filename_is_tried_before_the_platform_format(tmp_path: Path) -> None:
+    """写全了文件名就尊重用户的选择，别自作主张换成别的格式。"""
+    write_pyproject(tmp_path, '[tool.cakeui]\nname = "X"\nicon = "logo.png"\n')
+    config = load_config(tmp_path)
+
+    candidates = config.icon_candidates("darwin")
+    assert candidates[0] == tmp_path / "logo.png"
+    assert candidates[1] == tmp_path / "logo.icns"
+
+
+def test_an_icon_directory_looks_for_icon_dot_star(tmp_path: Path) -> None:
+    write_pyproject(tmp_path, '[tool.cakeui]\nname = "X"\nicon = "assets"\n')
+    (tmp_path / "assets").mkdir()
+    config = load_config(tmp_path)
+
+    assert config.icon_candidates("linux")[0] == tmp_path / "assets" / "icon.png"
+
+
+def test_resolve_icon_picks_the_first_file_that_exists(tmp_path: Path) -> None:
+    write_pyproject(tmp_path, '[tool.cakeui]\nname = "X"\nicon = "assets/icon"\n')
+    (tmp_path / "assets").mkdir()
+    assert load_config(tmp_path).resolve_icon("darwin") is None
+
+    (tmp_path / "assets" / "icon.png").write_bytes(b"\x00")
+    assert load_config(tmp_path).resolve_icon("darwin") == tmp_path / "assets" / "icon.png"
+
+
+def test_no_icon_configured_means_no_candidates(tmp_path: Path) -> None:
+    write_pyproject(tmp_path, '[tool.cakeui]\nname = "X"\n')
+    config = load_config(tmp_path)
+
+    assert config.icon_candidates() == []
+    assert config.resolve_icon() is None

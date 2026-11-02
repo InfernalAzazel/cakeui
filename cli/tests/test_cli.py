@@ -71,6 +71,11 @@ def test_scaffold_merges_vite_output_with_the_base_layer(tmp_path: Path) -> None
     bridge = project / "web" / "src" / "lib" / "cakeui"
     assert (bridge / "cakeui-boot.ts").is_file()
 
+    # The icon set ships with every new project, so `cakeui build` finds it.
+    for suffix in (".png", ".icns", ".ico"):
+        assert (project / "assets" / f"icon{suffix}").is_file()
+    assert 'icon = "assets/icon"' in (project / "pyproject.toml").read_text("utf-8")
+
     # Generated bridge, in CakeUI's own subdirectory
     assert (bridge / "cakeui.js").is_file()
     assert (bridge / "cakeui.d.ts").is_file()

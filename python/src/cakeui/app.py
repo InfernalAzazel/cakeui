@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
@@ -12,12 +13,23 @@ from .bridge import ensure_bridge_file
 from .commands import CommandSpec
 from .config import CakeUIConfig, load_config
 from .errors import CakeUIError, ConfigError
-from .resources import resource_root
+from .resources import resource_path, resource_root
 from .router import Router, fail
 from .window import Window
 
 DEV_URL_ENV = "CAKEUI_DEV_URL"
 DEBUG_ENV = "CAKEUI_DEBUG"
+
+# pywebview 各后端能直接吃的窗口图标格式。
+#
+# 和打包用的 ICON_SUFFIXES 不完全一样：Windows 的 winforms 后端走的是
+# System.Drawing.Icon，只认 .ico，传 PNG 会在建窗口时抛异常；GTK/QT 读的是
+# 图片文件，PNG 最稳。图标纯粹是外观，挑不到就干脆不传。
+RUNTIME_ICON_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "darwin": (".icns", ".png"),
+    "win32": (".ico",),
+    "linux": (".png",),
+}
 
 # 够覆盖一次启动时的事件突发，又不至于让一个永不加载的窗口把内存吃光。
 _MAX_PENDING_EVENTS = 200
@@ -76,6 +88,7 @@ class App:
         background_color: str = "#ffffff",
         url: str | None = None,
         web: str | os.PathLike[str] | None = None,
+        icon: str | os.PathLike[str] | None = None,
         debug: bool | None = None,
         gui: str | None = None,
         private_mode: bool = False,
@@ -99,6 +112,8 @@ class App:
         self.storage_path = Path(storage_path).expanduser() if storage_path else None
 
         self._web = Path(web).expanduser().resolve() if web else None
+        # 显式传了图标就以它为准；否则用 [tool.cakeui] 的 icon。
+        self._icon = Path(icon).expanduser() if icon else None
         self._windows: list[Window] = []
         # 窗口加载完成前发出的事件先攒着，等 ``loaded`` 事件到了再补发。
         self._pending_events: dict[str, list[tuple[str, Any]]] = {}
@@ -244,7 +259,32 @@ class App:
             gui=gui or self.gui,
             private_mode=self.private_mode,
             storage_path=str(self.storage_path) if self.storage_path else None,
+            icon=self.window_icon(),
         )
+
+    def window_icon(self) -> str | None:
+        """运行时窗口图标；挑不到就返回 ``None``。
+
+        打包后的应用里，图标已经由 Nuitka 嵌进 ``.app`` / exe 了，这里主要是
+        让 ``cakeui dev`` 和 Linux 上的窗口也带上图标。所以缺文件不是错误，
+        只是没有图标而已。
+        """
+        if self._icon is not None:
+            candidates = [self._icon]
+        elif self.config is not None:
+            candidates = self.config.icon_candidates()
+        else:
+            return None
+
+        allowed = RUNTIME_ICON_SUFFIXES.get(sys.platform)
+        for path in candidates:
+            if allowed is not None and path.suffix.lower() not in allowed:
+                continue
+            # 相对路径按资源根解析，打包后就能找到随包发布的那一份。
+            resolved = path if path.is_absolute() else resource_path(path)
+            if resolved.is_file():
+                return str(resolved)
+        return None
 
     # -- 决定加载什么 ----------------------------------------------------
     def _resolve_url(self) -> str:

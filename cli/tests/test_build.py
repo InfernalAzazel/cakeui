@@ -332,6 +332,15 @@ def test_cli_build_failure_has_no_traceback(
     assert "Nuitka" in capsys.readouterr().err
 
 
+def write_icon(root: Path, *names: str) -> Path:
+    """放几个假图标文件：打包只关心路径和扩展名，不解析图片内容。"""
+    assets = root / "assets"
+    assets.mkdir(exist_ok=True)
+    for name in names:
+        (assets / name).write_bytes(b"\x00")
+    return assets
+
+
 @pytest.mark.parametrize(
     ("platform", "flag"),
     [
@@ -344,10 +353,60 @@ def test_the_icon_reaches_each_platform(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, platform: str, flag: str
 ) -> None:
     root = write_project(tmp_path, extra='icon = "assets/app.png"')
+    write_icon(root, "app.png")
     monkeypatch.setattr(sys, "platform", platform)
     argv = plan_build(load_config(root)).nuitka_argv
 
-    assert f"{flag}=assets/app.png" in argv
+    # 绝对路径，免得 Nuitka 按自己的 cwd 再解释一遍。
+    assert f"{flag}={(root / 'assets/app.png').resolve()}" in argv
+
+
+@pytest.mark.parametrize(
+    ("platform", "filename", "flag"),
+    [
+        ("darwin", "icon.icns", "--macos-app-icon"),
+        ("win32", "icon.ico", "--windows-icon-from-ico"),
+        ("linux", "icon.png", "--linux-icon"),
+    ],
+)
+def test_a_bare_stem_picks_the_platform_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, platform: str, filename: str, flag: str
+) -> None:
+    """`icon = "assets/icon"` 不写扩展名，各平台各挑各的。"""
+    root = write_project(tmp_path, extra='icon = "assets/icon"')
+    write_icon(root, "icon.icns", "icon.ico", "icon.png")
+    monkeypatch.setattr(sys, "platform", platform)
+
+    argv = plan_build(load_config(root)).nuitka_argv
+
+    assert f"{flag}={(root / 'assets' / filename).resolve()}" in argv
+
+
+def test_the_icon_is_copied_into_the_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """pywebview 运行时还要读这个文件，所以它不能只被嵌进 exe。"""
+    root = write_project(tmp_path, extra='icon = "assets/icon"')
+    write_icon(root, "icon.icns", "icon.ico", "icon.png")
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    argv = plan_build(load_config(root)).nuitka_argv
+
+    assert "--include-data-files=assets/icon.png=assets/icon.png" in argv
+
+
+def test_a_missing_icon_is_caught_before_nuitka_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = write_project(tmp_path, extra='icon = "assets/icon"')
+    monkeypatch.setattr(sys, "platform", "darwin")
+
+    with pytest.raises(BuildError) as excinfo:
+        plan_build(load_config(root))
+
+    assert "assets/icon" in excinfo.value.message
+    searched = excinfo.value.details["searched"]  # type: ignore[index]
+    assert any(path.endswith("icon.icns") for path in searched)
 
 
 def test_a_relative_output_dir_is_resolved_against_the_project(
