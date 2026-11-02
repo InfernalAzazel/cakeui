@@ -1,17 +1,31 @@
 # 发布到 PyPI：推 `v*` 标签自动发版，也可以在 Actions 页面手动发到 TestPyPI。
 #
-# 用 Trusted Publishing，仓库里不存任何 API token。首次发布前，在 PyPI 和
-# TestPyPI 各配一次 "pending publisher"，两个项目（cakeui、cakeui-cli）都要配：
-#   Owner            InfernalAzazel
-#   Repository       cakeui
-#   Workflow         release.yml
-#   Environment      pypi（TestPyPI 那边填 testpypi）
+# 用 Trusted Publishing，仓库里不存任何 API token。
 #
-# 发布顺序有讲究：cakeui 必须先于 cakeui-cli 存在，否则 `cakeui-cli` 的
-# `cakeui>=0.1.0` 依赖在安装时解析不到。这里一次性上传全部产物，正好满足。
+# ## 为什么要两个 environment
 #
-# 版本号不能复用：PyPI 拒绝任何已存在版本的重传，所以先把两个 pyproject.toml
-# 的 version 改成同一个新值，再打标签。
+# PyPI 的 "pending publisher"（为尚不存在的项目预注册发布者）要求
+# (owner, repository, workflow, environment) 四元组唯一，项目名不参与去重。
+# 所以一个 workflow + 一个 environment 只能给一个项目占坑，第二个会报：
+#   "A pending trusted publisher matching this configuration is already
+#    registered for a different project name."
+# 这条约束只针对 pending：项目建好之后的正式发布者可以共用一个配置。
+# 这里用不同 environment 把两个待创建的项目隔开，因此要在 PyPI 各配一次：
+#
+#   cakeui       Workflow release.yml  Environment pypi
+#   cakeui-cli   Workflow release.yml  Environment pypi-cli
+#
+# 手动发 TestPyPI 时对应 testpypi / testpypi-cli，两边也要分别配。
+#
+# ## 顺序
+#
+# cakeui 先发：`cakeui-cli` 依赖 `cakeui>=0.1.0`，先有运行时才能装。上传本身
+# 不校验依赖，但两个包之间若有几秒空档，这期间的用户会装不上。
+#
+# ## 版本号
+#
+# PyPI 拒绝任何已存在版本的重传。先把两个 pyproject.toml 的 version 改成同
+# 一个新值，再打同名标签。
 
 name: release
 
@@ -80,14 +94,16 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-  publish:
-    name: 上传到 ${{ github.event.inputs.target || 'pypi' }}
+  # 两个包拆成两个 job，因为各自的 pending publisher 绑在不同的 environment 上。
+  # 运行时的 job 排在前面，CLI 用 needs 等它，保证用户不会遇到"CLI 有了但运行时
+  # 还没有"的空档。
+  publish-runtime:
+    name: 上传 cakeui
     needs: build
     runs-on: ubuntu-latest
-    # 环境名同时充当 Trusted Publishing 的绑定目标；tag 触发的就是正式发布。
-    environment: ${{ github.event.inputs.target || 'pypi' }}
+    environment: ${{ github.event.inputs.target == 'testpypi' && 'testpypi' || 'pypi' }}
     permissions:
-      # Trusted Publishing 靠这个短期 OIDC token，不需要PyPI API token。
+      # Trusted Publishing 靠这个短期 OIDC token，不需要 PyPI API token。
       id-token: write
     steps:
       - uses: actions/download-artifact@v4
@@ -95,9 +111,44 @@ jobs:
           name: dist
           path: dist/
 
+      # 产物里两个包混在一起，这里只挑运行时的。cakeui-* 匹配不到 cakeui_cli-*，
+      # 后者用的是下划线。
+      - name: 挑出运行时产物
+        run: |
+          mkdir upload
+          mv dist/cakeui-[0-9]* upload/
+          ls upload
+
       - name: 上传
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: ${{ github.event.inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          packages-dir: upload/
           # 产物已经在上一步校验过，这里不再重复检查。
+          verify-metadata: false
+
+  publish-cli:
+    name: 上传 cakeui-cli
+    needs: publish-runtime
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target == 'testpypi' && 'testpypi-cli' || 'pypi-cli' }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: 挑出 CLI 产物
+        run: |
+          mkdir upload
+          mv dist/cakeui_cli-* upload/
+          ls upload
+
+      - name: 上传
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ github.event.inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          packages-dir: upload/
           verify-metadata: false
