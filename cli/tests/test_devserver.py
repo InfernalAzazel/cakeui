@@ -137,13 +137,15 @@ def test_dev_command_uses_the_detected_package_manager(tmp_path: Path) -> None:
     assert command.argv == ["pnpm", "run", "dev"]
 
 
-def test_refresh_bridge_module_writes_into_src(tmp_path: Path) -> None:
+def test_refresh_bridge_module_writes_into_its_own_subdirectory(tmp_path: Path) -> None:
     web = write_project(tmp_path, with_package_json=True)
     (web / "src").mkdir()
     written = refresh_bridge_module(load_config(tmp_path))
 
+    bridge = web / "src" / "lib" / "cakeui"
     assert [path.name for path in written] == ["cakeui.js", "cakeui.d.ts"]
-    assert "export" in (web / "src" / "cakeui.js").read_text("utf-8")
+    assert all(path.parent == bridge for path in written)
+    assert "export" in (bridge / "cakeui.js").read_text("utf-8")
 
 
 def test_refresh_bridge_module_is_a_noop_without_src(tmp_path: Path) -> None:

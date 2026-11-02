@@ -46,7 +46,7 @@ def test_base_directory_holds_the_python_side() -> None:
 
     assert (BASE_DIR / "main.py").is_file()
     assert (BASE_DIR / "pyproject.toml").is_file()
-    assert (BASE_DIR / "web" / "src" / "cakeui-boot.ts").is_file()
+    assert (BASE_DIR / "web" / "src" / "lib" / "cakeui" / "cakeui-boot.ts").is_file()
     # The frontend itself is never vendored: Vite generates it into web/.
     assert not (BASE_DIR / "web" / "index.html").exists()
 
@@ -68,12 +68,13 @@ def test_scaffold_merges_vite_output_with_the_base_layer(tmp_path: Path) -> None
     assert (project / "README.md").is_file()
     assert (project / ".gitignore").is_file()
     assert not (project / "_gitignore").exists()
-    assert (project / "web" / "src" / "cakeui-boot.ts").is_file()
+    bridge = project / "web" / "src" / "lib" / "cakeui"
+    assert (bridge / "cakeui-boot.ts").is_file()
 
-    # Generated bridge, next to the entry module
-    assert (project / "web" / "src" / "cakeui.js").is_file()
-    assert (project / "web" / "src" / "cakeui.d.ts").is_file()
-    assert "export" in (project / "web" / "src" / "cakeui.js").read_text("utf-8")
+    # Generated bridge, in CakeUI's own subdirectory
+    assert (bridge / "cakeui.js").is_file()
+    assert (bridge / "cakeui.d.ts").is_file()
+    assert "export" in (bridge / "cakeui.js").read_text("utf-8")
 
     assert result.entry == project / "web" / "src" / "main.ts"
 
@@ -83,7 +84,9 @@ def test_generated_types_replace_the_template_placeholder(tmp_path: Path) -> Non
     from cakeui.bridge import bridge_types_source
 
     result = scaffold("my-app", tmp_path / "app", runner=fake_runner())
-    generated = (result.destination / "web" / "src" / "cakeui.d.ts").read_text("utf-8")
+    generated = (result.destination / "web" / "src" / "lib" / "cakeui" / "cakeui.d.ts").read_text(
+        "utf-8"
+    )
 
     assert generated == bridge_types_source()
     assert "占位类型声明" not in generated
@@ -95,7 +98,7 @@ def test_entry_file_gets_one_bridge_import(tmp_path: Path) -> None:
     text = entry.read_text("utf-8")
 
     assert text.count("// cakeui:bridge") == 1
-    assert 'import "./cakeui-boot";' in text
+    assert 'import "./lib/cakeui/cakeui-boot";' in text
     # The framework's own code is untouched.
     assert text.startswith("import { createApp } from 'vue'")
 

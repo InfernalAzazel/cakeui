@@ -27,9 +27,9 @@ def test_real_vite_scaffold(tmp_path, template: str) -> None:
     result = scaffold("real-app", tmp_path / "app", template=template)
 
     assert result.entry.name in {"main.ts", "main.tsx"}
-    assert 'import "./cakeui-boot";' in result.entry.read_text("utf-8")
+    assert 'import "./lib/cakeui/cakeui-boot";' in result.entry.read_text("utf-8")
     assert (result.web / "package.json").is_file()
-    assert (result.web / "src" / "cakeui-boot.ts").is_file()
+    assert (result.web / "src" / "lib" / "cakeui" / "cakeui-boot.ts").is_file()
     assert result.bridge_files
 
     package = (result.web / "package.json").read_text("utf-8")

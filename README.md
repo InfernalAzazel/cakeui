@@ -93,10 +93,11 @@ my-app/
     ├── package.json
     ├── vite.config.ts
     └── src/
-        ├── main.ts         # one appended line imports ./cakeui-boot
-        ├── cakeui-boot.ts  # CakeUI glue: toasts + one handshake invoke
-        ├── cakeui.js       # generated bridge (git-ignored)
-        └── cakeui.d.ts     # generated types (git-ignored)
+        ├── main.ts         # one appended line imports ./lib/cakeui/cakeui-boot
+        └── lib/cakeui/     # everything CakeUI generates lives here
+            ├── cakeui-boot.ts  # glue: toasts + one handshake invoke
+            ├── cakeui.js       # generated bridge (git-ignored)
+            └── cakeui.d.ts     # generated types (git-ignored)
 ```
 
 ## Templates
@@ -111,7 +112,7 @@ cli/src/cakeui_cli/templates/
     ├── pyproject.toml      # [tool.cakeui]
     ├── README.md
     ├── _gitignore          # renamed to .gitignore
-    └── web/src/cakeui-boot.ts
+    └── web/src/lib/cakeui/cakeui-boot.ts
 ```
 
 | Template | Vite template | Notes |
@@ -127,10 +128,11 @@ used for `--help` and error hints. Any other Vite template name works too
 supporting a new framework means listing it, not writing a template.
 
 Two things CakeUI touches in generated frontend code: it writes `cakeui.js` /
-`cakeui.d.ts` next to the entry module, and appends one marked import to the
-entry file. Everything else (`vite.config.ts`, components, `index.html`) is
-exactly what Vite produced, so upgrades never require template surgery. Deleting
-that one import detaches CakeUI and leaves an ordinary web app.
+`cakeui.d.ts` into `src/lib/cakeui/` (so nothing of ours lands in the `src/`
+root), and appends one marked import to the entry file. Everything else
+(`vite.config.ts`, components, `index.html`) is exactly what Vite produced, so
+upgrades never require template surgery. Deleting that one import detaches
+CakeUI and leaves an ordinary web app.
 
 The bridge is a generated file rather than an npm dependency, so a scaffolded
 project typechecks and runs immediately, without waiting for a release on npm.

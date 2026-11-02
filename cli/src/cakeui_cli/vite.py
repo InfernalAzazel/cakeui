@@ -26,7 +26,13 @@ WEB_DIR = "web"
 _SCRIPT = re.compile(r"""<script[^>]*\bsrc=["']([^"']+)["']""", re.I)
 
 BOOT_MARKER = "// cakeui:bridge"
-BOOT_MODULE = "cakeui-boot"
+
+# CakeUI 生成的文件统一放在前端源码的这个子目录里：桥接模块、类型声明和启动
+# 模块都归它们自己，不和项目自己的代码混在 src/ 根上。
+BRIDGE_DIR = Path("lib") / "cakeui"
+
+# 启动模块相对入口文件的路径，用来生成 import 语句。
+BOOT_SPECIFIER = (BRIDGE_DIR / "cakeui-boot").as_posix()
 
 
 class ViteError(CakeUIError):
@@ -126,7 +132,7 @@ def attach_boot(entry: Path) -> bool:
 
     addition = (
         f"\n{BOOT_MARKER}: 由 `cakeui new` 添加；删掉这一行即解除与 CakeUI 的绑定。\n"
-        f'import "./{BOOT_MODULE}";\n'
+        f'import "./{BOOT_SPECIFIER}";\n'
     )
     entry.write_text(original.rstrip("\n") + "\n" + addition, "utf-8")
     return True

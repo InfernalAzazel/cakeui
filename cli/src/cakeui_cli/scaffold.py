@@ -24,7 +24,7 @@ from cakeui.errors import CakeUIError
 
 from . import packages
 from .packages import PackageManager
-from .vite import WEB_DIR, ViteError, attach_boot, create_vite, find_entry
+from .vite import BRIDGE_DIR, WEB_DIR, ViteError, attach_boot, create_vite, find_entry
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 BASE_DIR = TEMPLATES_DIR / "_base_"
@@ -163,7 +163,7 @@ def scaffold(
             },
         )
 
-    bridge_files = ensure_bridge_module(entry.parent)
+    bridge_files = ensure_bridge_module(entry.parent / BRIDGE_DIR)
     attach_boot(entry)
 
     return ScaffoldResult(

@@ -3,8 +3,8 @@ dist/
 *.tsbuildinfo
 
 # Generated CakeUI bridge; `cakeui dev` rewrites these, do not edit them.
-web/src/cakeui.js
-web/src/cakeui.d.ts
+web/src/lib/cakeui/cakeui.js
+web/src/lib/cakeui/cakeui.d.ts
 
 __pycache__/
 .venv/

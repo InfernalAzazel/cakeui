@@ -20,6 +20,7 @@ from cakeui.config import CakeUIConfig
 from cakeui.errors import CakeUIError
 
 from . import packages
+from .vite import BRIDGE_DIR
 
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 _URL = re.compile(r"https?://[^\s\"'<>)\]]+")
@@ -83,8 +84,8 @@ def detect_package_script(config: CakeUIConfig, script: str) -> DevCommand | Non
 def refresh_bridge_module(config: CakeUIConfig) -> list[Path]:
     """把生成的 ESM 桥接重写进打包器的源码目录。
 
-    打包器模板是从源码目录 ``import "./cakeui.js"`` 的，所以运行时一升级，
-    这份拷贝就得跟着刷新。
+    桥接在 ``web/src/lib/cakeui/`` 下，启动模块是从那里 ``import "./cakeui.js"``
+    的，所以运行时一升级，这份拷贝就得跟着刷新。
     """
     web = config.web_path
     if web is None:
@@ -92,7 +93,7 @@ def refresh_bridge_module(config: CakeUIConfig) -> list[Path]:
     source_dir = web / "src"
     if not source_dir.is_dir():
         return []
-    return ensure_bridge_module(source_dir)
+    return ensure_bridge_module(source_dir / BRIDGE_DIR)
 
 
 class DevServer:
