@@ -19,6 +19,7 @@ from .build import plan_build, run_build
 from .devserver import DevServer, detect_dev_command, refresh_bridge_module
 from .packages import PackageManager
 from .scaffold import DEFAULT_TEMPLATE, scaffold, template_names
+from .sync import sync_project
 
 DEV_URL_ENV = "CAKEUI_DEV_URL"
 DEBUG_ENV = "CAKEUI_DEBUG"
@@ -89,6 +90,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     info = subparsers.add_parser("info", help="打印解析后的项目配置。")
     info.set_defaults(func=cmd_info)
+
+    sync = subparsers.add_parser(
+        "sync",
+        help="把前端里由 CakeUI 生成的文件刷新到当前安装的版本。",
+    )
+    sync.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="只打印会改动哪些文件，不写入。",
+    )
+    sync.add_argument(
+        "--force",
+        action="store_true",
+        help="连本地改过的 cakeui-boot.ts 也一起覆盖。",
+    )
+    sync.set_defaults(func=cmd_sync)
 
     build = subparsers.add_parser("build", help="构建前端并用 Nuitka 打包成可执行文件。")
     build.add_argument(
@@ -315,6 +332,40 @@ def cmd_build(args: argparse.Namespace) -> int:
     result = run_build(plan)
     console.success(f"已生成 {result.executable}")
     console.detail(f"运行 {_display_path(result.executable)}")
+    return 0
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    config = load_config(Path.cwd())
+    result = sync_project(config, force=args.force, dry_run=args.dry_run)
+
+    console.headline(f"同步 {config.name}")
+
+    if result.note:
+        console.info(result.note)
+        return 0
+
+    console.detail(f"target    {_display_path(result.target)}")
+
+    verb = "会写入" if result.dry_run else "已写入"
+    for path in result.written:
+        console.detail(f"{verb}  {_display_path(path)}")
+    for path in result.kept:
+        console.warn(f"保留本地修改：{_display_path(path)}（加 --force 覆盖）")
+    if result.entry is not None and result.entry_updated:
+        console.detail(f"{verb}  {_display_path(result.entry)}（补上 boot import）")
+
+    if result.dry_run:
+        if result.changed:
+            console.warn("--dry-run：未写入任何文件。")
+        else:
+            console.success("已经是最新的，没有要改的。")
+    elif result.changed:
+        console.success("前端里的 CakeUI 文件已对齐到当前版本。")
+    elif result.kept:
+        console.info("生成的文件已是最新，只有本地改过的文件被保留。")
+    else:
+        console.success("已经是最新的，没有改动。")
     return 0
 
 

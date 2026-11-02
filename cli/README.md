@@ -34,7 +34,15 @@ pip install "cakeui-cli[build]"
 | `cakeui new <name> [--template NAME] [-p npm\|pnpm\|yarn\|bun] [--dir PATH] [--force] [--no-install]` | Scaffold with `npm create vite`, then merge the CakeUI layer |
 | `cakeui dev [--url URL] [--debug] [-- extra args]` | Start the frontend dev server, then open the window |
 | `cakeui info` | Print the resolved config and web paths |
+| `cakeui sync [--dry-run] [--force]` | Refresh `web/src/lib/cakeui/` to the installed version |
 | `cakeui build [--mode standalone\|onefile] [--output-dir PATH] [--no-web] [--dry-run]` | Build the frontend, then package with Nuitka |
+
+`cakeui sync` is the upgrade path: `cakeui new` only lays the generated files
+down once, and `cakeui dev` only refreshes them when it starts a dev server
+itself. `sync` rewrites the bridge, the TypeScript declarations and
+`cakeui-boot.ts`, and re-adds the boot import to the entry file if it is
+missing. Bridge files are always overwritten; a locally edited
+`cakeui-boot.ts` is kept unless you pass `--force`.
 
 `cakeui new` supports `vue-ts`, `react-ts`, `svelte-ts` and `vanilla-ts` by name,
 but any Vite template works, because the name is passed straight to Vite.

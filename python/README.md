@@ -59,8 +59,9 @@ call from JavaScript is rejected with structured data instead of a string in
 The bridge files are built from the `js/` directory in the repository and
 committed here, so the frontend you import and the runtime that answers it can
 never disagree about the protocol. There is no separate npm package to install:
-`cakeui new` writes `cakeui.js` and `cakeui.d.ts` into your project, and every
-`cakeui dev` refreshes them.
+`cakeui new` writes `cakeui.js` and `cakeui.d.ts` into your project, every
+`cakeui dev` refreshes them, and `cakeui sync` redoes the whole generated
+directory on demand (for example right after upgrading).
 
 ## Documentation
 

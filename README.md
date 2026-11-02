@@ -279,6 +279,19 @@ There is nothing to install. The bridge is a generated file inside your project:
 The frontend and the runtime therefore cannot drift apart, and there is no
 package version to keep in sync.
 
+Upgrading CakeUI later? Run `cakeui sync` once in the project:
+
+```bash
+cakeui sync             # refresh every generated file to the installed version
+cakeui sync --dry-run   # show what would change, write nothing
+cakeui sync --force     # also overwrite a locally edited cakeui-boot.ts
+```
+
+It rewrites the bridge and the boot module, and re-adds the `// cakeui:bridge`
+import to your entry file if it went missing. `cakeui.js` and `cakeui.d.ts` are
+build output and are always overwritten; `cakeui-boot.ts` is yours to edit, so a
+modified copy is left alone unless you pass `--force`.
+
 ```ts
 import { invoke, listen, emit, ready, isReady, CakeUIError } from "./lib/cakeui/cakeui.js";
 
@@ -447,6 +460,7 @@ never disagree about the protocol.
 | `cakeui new <name> [--template NAME] [-p npm\|pnpm\|yarn\|bun] [--dir PATH] [--force] [--no-install]` | v0.1 | Scaffold with Vite, then merge the base layer and the bridge |
 | `cakeui dev [--url URL] [--debug] [-- extra args]` | v0.1 | Start the dev server, then the window |
 | `cakeui info` | v0.1 | Print the resolved config, icon and paths |
+| `cakeui sync [--dry-run] [--force]` | v0.1 | Refresh `web/src/lib/cakeui/` to the installed version |
 | `cakeui build [--mode standalone\|onefile] [--output-dir PATH] [--no-web] [--dry-run]` | v0.1 | Build the frontend, then package with Nuitka |
 | `cakeui typegen` | planned | Generate TypeScript declarations from Python commands |
 

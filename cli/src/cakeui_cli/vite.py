@@ -131,7 +131,7 @@ def attach_boot(entry: Path) -> bool:
         return False
 
     addition = (
-        f"\n{BOOT_MARKER}: 由 `cakeui new` 添加；删掉这一行即解除与 CakeUI 的绑定。\n"
+        f"\n{BOOT_MARKER}: 由 CakeUI 添加；删掉这一行即解除与 CakeUI 的绑定。\n"
         f'import "./{BOOT_SPECIFIER}";\n'
     )
     entry.write_text(original.rstrip("\n") + "\n" + addition, "utf-8")
