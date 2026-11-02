@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+/dist/
+/python/dist/
+/cli/dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# Generated: written next to a local index.html by the runtime
+frontend/cakeui.js
+
+# OS
+.DS_Store

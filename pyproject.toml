@@ -1,0 +1,32 @@
+# Virtual workspace root: no distributable package lives here.
+# `uv sync --all-packages` installs `cakeui` (python/) and `cakeui-cli` (cli/) in editable mode.
+[tool.uv.workspace]
+members = ["python", "cli"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests", "cli/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    # 注释和提示信息用中文，全角标点是正常用法，不是"易混淆字符"。
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 包的 __init__ 就是对外再导出，被 import 但"没用到"是它的职责。
+"python/src/cakeui/__init__.py" = ["F401"]
+# 模板文件是数据而不是可导入的 Python：`{{placeholder}}` 会让解析失败。
+"cli/src/cakeui_cli/templates/**" = ["ALL"]

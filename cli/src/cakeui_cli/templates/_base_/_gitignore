@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Generated CakeUI bridge; `cakeui dev` rewrites these, do not edit them.
+web/src/cakeui.js
+web/src/cakeui.d.ts
+
+__pycache__/
+.venv/
+build/
+*.egg-info/
+.pytest_cache/
+
+.DS_Store
